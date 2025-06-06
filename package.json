@@ -39,10 +39,10 @@
     "sinon": "^15.2.0"
   },  "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/node-red-contrib-brdc-network-tools.git"
+    "url": "https://github.com/CervezaStallone/node-red-contrib-brdc-network-tools.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/node-red-contrib-brdc-network-tools/issues"
+    "url": "https://github.com/CervezaStallone/node-red-contrib-brdc-network-tools/issues"
   },
-  "homepage": "https://github.com/your-username/node-red-contrib-brdc-network-tools#readme"
+  "homepage": "https://github.com/CervezaStallone/node-red-contrib-brdc-network-tools#readme"
 }
