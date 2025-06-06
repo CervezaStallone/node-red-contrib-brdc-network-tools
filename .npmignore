@@ -1,0 +1,80 @@
+# Development and testing files
+test/
+*.test.js
+*.spec.js
+test-*.js
+debug-*.js
+comprehensive-*.js
+DEPLOYMENT_READY.md
+
+# Build artifacts and packages
+build/
+dist/
+coverage/
+.nyc_output/
+*.tgz
+*.tar.gz
+node-red-contrib-*.tgz
+
+# Documentation files (keep README.md)
+IMPROVEMENT_PLAN.md
+NODE-RED-TROUBLESHOOTING.md
+TEST_SUMMARY.md
+USAGE_EXAMPLES.md
+CHANGELOG.md
+
+examples/
+
+# CI/CD files
+.github/
+.travis.yml
+.circleci/
+appveyor.yml
+
+# Node.js dependencies
+node_modules/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment files
+.env*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# Git files
+.git/
+.gitignore
+
+# Node-RED development files
+flows_*.json
+.flows.json.backup
+flows.json
+settings.js
+.node-red/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Example flows and test flows
+node-red-*.json
+*-flow.js
+example-*.js

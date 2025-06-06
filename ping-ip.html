@@ -1,0 +1,124 @@
+<script type="text/javascript">    RED.nodes.registerType('ping-ip', {
+        category: 'brdc-network-nodes',
+        color: '#87CEEB',
+        defaults: {
+            name: {value: ""},
+            ipAddress: {value: ""},
+            timeout: {value: 5000, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "network.svg",
+        label: function() {
+            return this.name || this.ipAddress || "ping-ip";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "ping ip",
+        oneditprepare: function() {
+            // Initialize timeout field
+            if (!this.timeout) {
+                $("#node-input-timeout").val(5000);
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="ping-ip">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-ipAddress"><i class="fa fa-globe"></i> IP Address</label>
+        <input type="text" id="node-input-ipAddress" placeholder="192.168.1.1 or leave empty to use msg.payload">
+        <div class="form-tips">
+            <strong>Tip:</strong> Leave empty to use <code>msg.payload</code> or <code>msg.ip</code> as IP address
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" placeholder="5000" min="1000" max="30000">
+        <div class="form-tips">
+            Timeout in milliseconds (1000-30000)
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="ping-ip">
+    <p>A node that pings an IP address or hostname and returns the result.</p>
+    
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>IP address or hostname to ping (if not configured in the node)</dd>
+        <dt class="optional">ip <span class="property-type">string</span></dt>
+        <dd>Alternative property for IP address</dd>
+    </dl>
+
+    <h3>Outputs</h3>    <ol class="node-ports">
+        <li>Success output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>host</code> - the target host</li>
+                        <li><code>alive</code> - true if host is reachable</li>
+                        <li><code>time</code> - response time in ms</li>
+                        <li><code>min</code> - minimum response time</li>
+                        <li><code>max</code> - maximum response time</li>
+                        <li><code>avg</code> - average response time</li>
+                        <li><code>packetLoss</code> - packet loss percentage</li>
+                        <li><code>output</code> - raw ping command output</li>
+                    </ul>
+                </dd>
+                <dt>ip <span class="property-type">string</span></dt>
+                <dd>the IP address that was pinged</dd>
+                <dt>timestamp <span class="property-type">string</span></dt>
+                <dd>ISO timestamp of when the ping was performed</dd>
+            </dl>
+        </li>
+        <li>Error output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>Same structure as success, but with <code>alive: false</code> and error information</dd>
+            </dl>
+        </li>
+    </ol>
+
+    <h3>Details</h3>
+    <p>This node pings a specified IP address or hostname and reports whether it is reachable.</p>
+    <p>The IP address can be:</p>
+    <ul>
+        <li>Configured in the node properties</li>
+        <li>Passed in <code>msg.payload</code></li>
+        <li>Passed in <code>msg.ip</code></li>
+    </ul>
+    <p>The node has two outputs:</p>
+    <ul>
+        <li><strong>Success (top):</strong> When the host is reachable</li>
+        <li><strong>Error (bottom):</strong> When the host is not reachable or an error occurs</li>
+    </ul>
+    <p>The node status shows the current state: pinging, reachable with response time, or unreachable.</p>
+
+    <h3>Examples</h3>
+    <p><strong>Ping Google DNS:</strong></p>
+    <pre>msg.payload = "8.8.8.8";</pre>
+    
+    <p><strong>Ping a hostname:</strong></p>
+    <pre>msg.payload = "google.com";</pre>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node (shown in the flow)</p>
+    <p><strong>IP Address:</strong> Default IP address or hostname to ping. Leave empty to use <code>msg.payload</code> or <code>msg.ip</code></p>
+    <p><strong>Timeout:</strong> Maximum wait time in milliseconds (1000-30000ms). Default is 5000ms</p>
+
+    <h3>IP Address Input Priority</h3>
+    <ol>
+        <li><code>msg.payload</code> (highest priority)</li>
+        <li><code>msg.ip</code></li>
+        <li>Configured IP address in node (lowest priority)</li>
+    </ol>
+</script>

@@ -1,0 +1,173 @@
+<script type="text/javascript">    RED.nodes.registerType('enhanced-ping', {
+        category: 'brdc-network-nodes',
+        color: '#00C853',
+        defaults: {
+            name: {value: ""},
+            ipAddress: {value: "", validate: RED.validators.regex(/^([0-9]{1,3}\.){3}[0-9]{1,3}$|^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$|^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)},
+            timeout: {value: 5000, validate: RED.validators.number()},
+            interval: {value: 0, validate: RED.validators.number()},
+            count: {value: 1, validate: RED.validators.number()},
+            size: {value: 32, validate: RED.validators.number()},
+            retries: {value: 0, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || "enhanced-ping";
+        },
+        oneditprepare: function() {
+            $("#node-input-interval").change(function() {
+                var interval = parseInt($(this).val());
+                if (interval > 0) {
+                    $("#continuous-options").show();
+                    $("#count-row").hide();
+                } else {
+                    $("#continuous-options").hide();
+                    $("#count-row").show();
+                }
+            }).trigger('change');
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="enhanced-ping">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-ipAddress"><i class="fa fa-globe"></i> IP Address</label>
+        <input type="text" id="node-input-ipAddress" placeholder="192.168.1.1 or hostname">
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" min="100" max="30000">
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-repeat"></i> Interval (ms)</label>
+        <input type="number" id="node-input-interval" min="0" placeholder="0 = single ping">
+        <div class="form-tips">Set to 0 for single ping, or interval in milliseconds for continuous ping</div>
+    </div>
+    <div class="form-row" id="count-row">
+        <label for="node-input-count"><i class="fa fa-hashtag"></i> Count</label>
+        <input type="number" id="node-input-count" min="1" max="100">
+    </div>
+    <div class="form-row">
+        <label for="node-input-size"><i class="fa fa-arrows-h"></i> Packet Size</label>
+        <input type="number" id="node-input-size" min="8" max="65500">
+    </div>
+    <div class="form-row">
+        <label for="node-input-retries"><i class="fa fa-refresh"></i> Retries</label>
+        <input type="number" id="node-input-retries" min="0" max="10">
+    </div>
+    <div id="continuous-options" style="display:none;">
+        <div class="form-tips">
+            <strong>Continuous Ping Mode:</strong><br/>
+            • Send <code>msg.command = "stop"</code> to stop continuous ping<br/>
+            • Send <code>msg.command = "clear-history"</code> to clear ping history<br/>
+            • Send <code>msg.command = "get-history"</code> to get ping history
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="enhanced-ping">
+    <p>Advanced ping node with extended features including continuous ping, statistics tracking and history management.</p>
+    
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>IP address or hostname to ping (overrides configuration)</dd>
+        
+        <dt class="optional">ip <span class="property-type">string</span></dt>
+        <dd>Alternative property for IP address</dd>
+        
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Timeout in milliseconds (overrides configuration)</dd>
+        
+        <dt class="optional">interval <span class="property-type">number</span></dt>
+        <dd>Interval for continuous ping in milliseconds</dd>
+        
+        <dt class="optional">count <span class="property-type">number</span></dt>
+        <dd>Number of pings to send (for single mode)</dd>
+        
+        <dt class="optional">size <span class="property-type">number</span></dt>
+        <dd>Packet size in bytes</dd>
+        
+        <dt class="optional">retries <span class="property-type">number</span></dt>
+        <dd>Number of retry attempts on failure</dd>
+        
+        <dt class="optional">command <span class="property-type">string</span></dt>
+        <dd>Control command: "stop", "clear-history", "get-history"</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Success output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>Ping results with statistics and timing information</dd>
+            </dl>
+        </li>
+        <li>Error output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>Error information and failure details</dd>
+            </dl>
+        </li>
+    </ol>    <h3>Features</h3>
+    <ul>
+        <li><strong>Continuous Ping:</strong> Set interval > 0 for repeated pings</li>
+        <li><strong>Statistics Tracking:</strong> RTT, jitter, packet loss, success rate</li>
+        <li><strong>History Management:</strong> Maintains ping history with configurable limits</li>
+        <li><strong>Retry Logic:</strong> Automatic retry on failure with backoff</li>
+        <li><strong>Advanced Configuration:</strong> Custom packet sizes and timeouts</li>
+        <li><strong>Control Commands:</strong> Stop, clear history, get history via messages</li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node</p>
+    <p><strong>IP Address:</strong> Target IP address or hostname to ping</p>
+    <p><strong>Timeout:</strong> Maximum wait time per ping in milliseconds (100-30000)</p>
+    <p><strong>Interval:</strong> For continuous ping, interval in milliseconds. Set to 0 for single ping</p>
+    <p><strong>Count:</strong> Number of pings to send in single mode (1-100)</p>
+    <p><strong>Packet Size:</strong> Size of ping packet in bytes (8-65500)</p>
+    <p><strong>Retry:</strong> Number of automatic retry attempts on failure (0-10)</p>
+
+    <h3>Control Commands</h3>
+    <ul>
+        <li><code>msg.command = "stop"</code> - Stop continuous ping</li>
+        <li><code>msg.command = "clear-history"</code> - Clear ping history</li>
+        <li><code>msg.command = "get-history"</code> - Get ping history</li>
+    </ul>
+
+    <h3>Example Output</h3>
+    <pre>{
+  "payload": {
+    "statistics": {
+      "host": "192.168.1.1",
+      "totalPings": 10,
+      "successfulPings": 9,
+      "failedPings": 1,
+      "successRate": 90,
+      "averageTime": 12.5,
+      "minTime": 8,
+      "maxTime": 25,
+      "jitter": 4.2,
+      "packetLoss": 10
+    },
+    "history": [...],
+    "timestamp": "2024-01-01T00:00:00.000Z"
+  }
+}</pre>    <h3>Usage Examples</h3>
+    <p><strong>Single ping:</strong></p>
+    <pre>msg.payload = "192.168.1.1";</pre>
+    
+    <p><strong>Continuous monitoring:</strong></p>
+    <pre>msg.payload = "8.8.8.8";
+msg.interval = 30000; // Every 30 seconds</pre>
+    
+    <p><strong>Stop continuous ping:</strong></p>
+    <pre>msg.command = "stop";</pre>
+</script>

@@ -1,0 +1,255 @@
+<script type="text/javascript">    RED.nodes.registerType('network-performance-monitor', {
+        category: 'brdc-network-nodes',
+        color: '#2196F3',
+        defaults: {
+            name: {value: ""},
+            targets: {value: []},
+            interval: {value: 60000, validate: RED.validators.number()},
+            timeout: {value: 5000, validate: RED.validators.number()},
+            historyLimit: {value: 100, validate: RED.validators.number()},
+            latencyThreshold: {value: 100, validate: RED.validators.number()},
+            packetLossThreshold: {value: 5, validate: RED.validators.number()},
+            availabilityThreshold: {value: 95, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["measurements", "alerts"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || "network-performance-monitor";
+        },
+        oneditprepare: function() {
+            var targetsList = $("#targets-list");
+            var addButton = $("#add-target-btn");
+            var targetInput = $("#new-target-input");
+            
+            // Load existing targets
+            if (this.targets && this.targets.length > 0) {
+                this.targets.forEach(function(target) {
+                    addTargetToList(target);
+                });
+            }
+            
+            addButton.click(function() {
+                var target = targetInput.val().trim();
+                if (target) {
+                    addTargetToList(target);
+                    targetInput.val('');
+                }
+            });
+            
+            targetInput.keypress(function(e) {
+                if (e.which === 13) { // Enter key
+                    addButton.click();
+                }
+            });
+            
+            function addTargetToList(target) {
+                var row = $('<div class="target-row" style="margin-bottom: 5px;"></div>');
+                row.append('<span style="display: inline-block; width: 200px;">' + target + '</span>');
+                row.append('<button type="button" class="remove-target-btn" style="margin-left: 10px;">Remove</button>');
+                
+                row.find('.remove-target-btn').click(function() {
+                    row.remove();
+                });
+                
+                targetsList.append(row);
+            }
+        },
+        oneditsave: function() {
+            var targets = [];
+            $("#targets-list .target-row").each(function() {
+                var target = $(this).find('span').text().trim();
+                if (target) {
+                    targets.push(target);
+                }
+            });
+            this.targets = targets;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="network-performance-monitor">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    
+    <div class="form-row">
+        <label><i class="fa fa-bullseye"></i> Targets</label>
+        <div style="margin-top: 5px;">
+            <input type="text" id="new-target-input" placeholder="Enter IP or hostname" style="width: 200px;">
+            <button type="button" id="add-target-btn" style="margin-left: 5px;">Add</button>
+        </div>
+        <div id="targets-list" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; min-height: 60px; max-height: 200px; overflow-y: auto;">
+        </div>
+        <div class="form-tips">Add targets to monitor. You can also add targets via input messages.</div>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (ms)</label>
+        <input type="number" id="node-input-interval" min="10000" max="3600000">
+        <div class="form-tips">Monitoring interval in milliseconds (minimum 10 seconds)</div>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-hourglass"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" min="1000" max="30000">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-historyLimit"><i class="fa fa-database"></i> History Limit</label>
+        <input type="number" id="node-input-historyLimit" min="10" max="1000">
+        <div class="form-tips">Maximum number of measurements to keep per target</div>
+    </div>
+    
+    <hr>
+    <h4>Alert Thresholds</h4>
+    
+    <div class="form-row">
+        <label for="node-input-latencyThreshold"><i class="fa fa-tachometer"></i> Latency (ms)</label>
+        <input type="number" id="node-input-latencyThreshold" min="1" max="10000">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-packetLossThreshold"><i class="fa fa-exclamation-triangle"></i> Packet Loss (%)</label>
+        <input type="number" id="node-input-packetLossThreshold" min="0" max="100">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-availabilityThreshold"><i class="fa fa-check-circle"></i> Availability (%)</label>
+        <input type="number" id="node-input-availabilityThreshold" min="50" max="100">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="network-performance-monitor">    <p>Monitors network performance of multiple targets with alerting and historical tracking.</p>
+    
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">command <span class="property-type">string</span></dt>
+        <dd>Control command: "start", "stop", "get-report", "clear-data", "add-target", "remove-target"</dd>
+          <dt class="optional">targets <span class="property-type">array</span></dt>
+        <dd>Array of IP addresses or hostnames to monitor</dd>
+        
+        <dt class="optional">target <span class="property-type">string</span></dt>
+        <dd>Single target to add/remove (used with add-target/remove-target commands)</dd>
+        
+        <dt class="optional">interval <span class="property-type">number</span></dt>
+        <dd>Monitoring interval in milliseconds</dd>
+        
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Ping timeout in milliseconds</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Measurements output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>Performance measurements and aggregated statistics</dd>
+            </dl>
+        </li>
+        <li>Alerts output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">array</span></dt>
+                <dd>Array of alert objects when thresholds are exceeded</dd>
+            </dl>
+        </li>
+    </ol>    <h3>Commands</h3>
+    <ul>
+        <li><code>start</code>: Start continuous monitoring</li>
+        <li><code>stop</code>: Stop monitoring</li>
+        <li><code>get-report</code>: Generate performance report</li>
+        <li><code>clear-data</code>: Clear all performance data</li>
+        <li><code>add-target</code>: Add new monitoring target</li>
+        <li><code>remove-target</code>: Remove monitoring target</li>
+    </ul>
+
+    <h3>Features</h3>
+    <ul>
+        <li><strong>Multi-Target Monitoring:</strong> Monitor multiple hosts simultaneously</li>
+        <li><strong>Performance Metrics:</strong> Latency, jitter, packet loss, availability</li>
+        <li><strong>Threshold Alerts:</strong> Configurable alerting thresholds</li>
+        <li><strong>Historical Tracking:</strong> Maintain performance history</li>
+        <li><strong>Trend Analysis:</strong> Performance trend calculation</li>
+        <li><strong>Real-time Reporting:</strong> Live performance dashboards</li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node</p>
+    <p><strong>Targets:</strong> IP addresses or hostnames to monitor</p>
+    <p><strong>Interval:</strong> Monitoring interval in milliseconds (minimum 10 seconds)</p>
+    <p><strong>Timeout:</strong> Ping timeout in milliseconds (1000-30000)</p>
+    <p><strong>History Limit:</strong> Maximum number of measurements per target (10-1000)</p>
+    
+    <h4>Alert Thresholds</h4>
+    <p><strong>Latency:</strong> Threshold for response time in milliseconds</p>
+    <p><strong>Packet Loss:</strong> Threshold for packet loss percentage (0-100%)</p>
+    <p><strong>Availability:</strong> Minimum availability percentage (50-100%)</p>
+
+    <h3>Example Measurement Output</h3>
+    <pre>{
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "measurements": [
+    {
+      "target": "192.168.1.1",
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "alive": true,
+      "latency": 12.5,
+      "packetLoss": 0
+    }
+  ],
+  "aggregate": {
+    "totalTargets": 5,
+    "aliveTargets": 4,
+    "downTargets": 1,
+    "availabilityPercent": 80,
+    "averageLatency": 15.2,
+    "minLatency": 8.1,
+    "maxLatency": 28.5,
+    "packetLossPercent": 2.5
+  },
+  "alerts": []
+}</pre>
+
+    <h3>Example Alert Output</h3>
+    <pre>[
+  {
+    "type": "latency",
+    "target": "192.168.1.100",
+    "value": 150,
+    "threshold": 100,
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "severity": "warning"
+  }
+]</pre>    <h3>Use Cases</h3>
+    <ul>
+        <li>Network Operations Center (NOC) dashboards</li>
+        <li>SLA monitoring and reporting</li>
+        <li>Proactive network maintenance</li>
+        <li>Performance baseline establishment</li>
+        <li>Capacity planning and optimization</li>
+        <li>Network performance trending and analysis</li>
+    </ul>
+
+    <h3>Usage Examples</h3>
+    <p><strong>Start monitoring multiple servers:</strong></p>
+    <pre>msg.command = "start";
+msg.targets = ["server1.company.com", "server2.company.com", "192.168.1.100"];
+msg.interval = 30000; // Every 30 seconds</pre>
+    
+    <p><strong>Add new target:</strong></p>
+    <pre>msg.command = "add-target";
+msg.target = "new-server.company.com";</pre>
+    
+    <p><strong>Generate performance report:</strong></p>
+    <pre>msg.command = "get-report";</pre>
+
+    <h3>Performance Considerations</h3>
+    <ul>
+        <li>Use reasonable monitoring intervals to limit network load</li>
+        <li>Limit the number of targets to control CPU and memory usage</li>
+        <li>Configure history limits as needed</li>
+        <li>Monitor only critical services for optimal performance</li>
+    </ul>
+</script>
