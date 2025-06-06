@@ -1,5 +1,5 @@
 {
-  "name": "node-red-contrib-brdc-network-tools",
+  "name": "node-red-contrib-network-tools",
   "version": "2.1.2",
   "description": "Comprehensive network monitoring and discovery tools for Node-RED",
   "keywords": [
