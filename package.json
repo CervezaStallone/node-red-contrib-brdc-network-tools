@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-network-tools",
-  "version": "2.2.3",
-  "description": "Comprehensive network monitoring and discovery tools for Node-RED",
+  "version": "2.2.0",
+  "description": "Comprehensive network monitoring and discovery tools for Node-RED with Bonjour/mDNS support",
   "keywords": [
     "node-red",
     "ping",
@@ -11,7 +11,11 @@
     "performance",
     "ip",
     "subnet",
-    "scanning"
+    "scanning",
+    "bonjour",
+    "mdns",
+    "zeroconf",
+    "service-discovery"
   ],
   "node-red": {
     "nodes": {
@@ -20,7 +24,9 @@
       "network-discovery": "network-discovery.js",
       "network-performance-monitor": "network-performance-monitor.js"
     }
-  },  "main": "ping-ip.js",    "scripts": {
+  },
+  "main": "ping-ip.js",
+  "scripts": {
     "test": "mocha test/**/*_spec.js",
     "test:watch": "mocha test/**/*_spec.js --watch",
     "test:verbose": "mocha test/**/*_spec.js --reporter spec",
@@ -29,6 +35,7 @@
   "author": "Brian Rodriguez - BRDC.nl",
   "license": "MIT",
   "dependencies": {
+    "bonjour": "3.5.0",
     "ping": "^0.4.4"
   },
   "devDependencies": {
@@ -37,7 +44,8 @@
     "node-red-node-test-helper": "^0.3.4",
     "should": "^13.2.3",
     "sinon": "^15.2.0"
-  },  "repository": {
+  },
+  "repository": {
     "type": "git",
     "url": "https://github.com/CervezaStallone/node-red-contrib-brdc-network-tools.git"
   },

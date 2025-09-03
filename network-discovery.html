@@ -10,7 +10,10 @@
             timeout: {value: 3000, validate: RED.validators.number()},
             concurrent: {value: 10, validate: RED.validators.number()},
             includeHostnames: {value: false},
-            includePorts: {value: false}
+            includePorts: {value: false},
+            includeBonjourServices: {value: false},
+            bonjourServiceTypes: {value: "http,ssh,ftp,smb"},
+            bonjourTimeout: {value: 5000, validate: RED.validators.number()}
         },
         inputs: 1,
         outputs: 1,
@@ -24,6 +27,16 @@
                     $("#port-range-row").show();
                 } else {
                     $("#port-range-row").hide();
+                }
+            }).trigger('change');
+            
+            $("#node-input-includeBonjourServices").change(function() {
+                if ($(this).is(':checked')) {
+                    $("#bonjour-service-types-row").show();
+                    $("#bonjour-timeout-row").show();
+                } else {
+                    $("#bonjour-service-types-row").hide();
+                    $("#bonjour-timeout-row").hide();
                 }
             }).trigger('change');
         }
@@ -64,6 +77,21 @@
         <input type="text" id="node-input-portRange" placeholder="22,80,443 or 80-90">
         <div class="form-tips">Comma-separated ports or ranges (e.g., 22,80,443 or 80-90,443)</div>
     </div>
+    <div class="form-row">
+        <label for="node-input-includeBonjourServices"><i class="fa fa-search"></i> Include Bonjour/mDNS</label>
+        <input type="checkbox" id="node-input-includeBonjourServices">
+        <div class="form-tips">Discover services using Bonjour/mDNS (zero-configuration networking)</div>
+    </div>
+    <div class="form-row" id="bonjour-service-types-row">
+        <label for="node-input-bonjourServiceTypes"><i class="fa fa-cogs"></i> Service Types</label>
+        <input type="text" id="node-input-bonjourServiceTypes" placeholder="http,ssh,ftp,smb">
+        <div class="form-tips">Comma-separated service types to discover (e.g., http,ssh,ftp,smb,printer)</div>
+    </div>
+    <div class="form-row" id="bonjour-timeout-row">
+        <label for="node-input-bonjourTimeout"><i class="fa fa-clock-o"></i> Bonjour Timeout (ms)</label>
+        <input type="number" id="node-input-bonjourTimeout" min="1000" max="30000">
+        <div class="form-tips">How long to wait for Bonjour service responses</div>
+    </div>
 </script>
 
 <script type="text/html" data-help-name="network-discovery">    <p>Discovers active devices on a network subnet with optional hostname resolution and port scanning.</p>
@@ -86,6 +114,15 @@
         
         <dt class="optional">includePorts <span class="property-type">boolean</span></dt>
         <dd>Whether to scan ports on discovered hosts</dd>
+        
+        <dt class="optional">includeBonjourServices <span class="property-type">boolean</span></dt>
+        <dd>Whether to discover services using Bonjour/mDNS</dd>
+        
+        <dt class="optional">bonjourServiceTypes <span class="property-type">string</span></dt>
+        <dd>Comma-separated list of service types to discover</dd>
+        
+        <dt class="optional">bonjourTimeout <span class="property-type">number</span></dt>
+        <dd>Timeout in milliseconds for Bonjour service discovery</dd>
     </dl>    <h3>Outputs</h3>
     <dl class="message-properties">
         <dt>payload <span class="property-type">object</span></dt>
@@ -98,6 +135,7 @@
         <li><strong>Concurrent Processing:</strong> Configurable parallel ping operations</li>
         <li><strong>Hostname Resolution:</strong> Optional reverse DNS lookups</li>
         <li><strong>Port Scanning:</strong> Check common services on discovered hosts</li>
+        <li><strong>Bonjour/mDNS Discovery:</strong> Zero-configuration service discovery (.local hostnames, service advertisements)</li>
         <li><strong>Progress Tracking:</strong> Real-time status updates during scan</li>
         <li><strong>Flexible Configuration:</strong> Override settings via input messages</li>
     </ul>
@@ -115,12 +153,16 @@
     <p><strong>Add Hostnames:</strong> Perform reverse DNS lookup for discovered hosts</p>
     <p><strong>Add Port Scan:</strong> Scan common ports on active hosts</p>
     <p><strong>Port Range:</strong> Specify ports to scan (e.g., 22,80,443 or 80-90,443)</p>
+    <p><strong>Include Bonjour/mDNS:</strong> Discover services using zero-configuration networking</p>
+    <p><strong>Service Types:</strong> Bonjour service types to discover (e.g., http,ssh,ftp,smb,printer)</p>
+    <p><strong>Bonjour Timeout:</strong> Maximum wait time for service discovery (1000-30000ms)</p>
 
     <h3>Example Output</h3>
     <pre>{
   "subnet": "192.168.1.0/24",
   "totalHosts": 254,
   "aliveHosts": 12,
+  "bonjourServicesFound": 8,
   "scanDuration": "2024-01-01T00:00:00.000Z",
   "devices": [
     {
@@ -129,14 +171,38 @@
       "responseTime": 1.2,
       "hostname": "router.local",
       "openPorts": [22, 80, 443],
+      "bonjourServices": [
+        {
+          "name": "Router Web Interface",
+          "type": "http",
+          "protocol": "tcp",
+          "host": "router.local",
+          "port": 80,
+          "fqdn": "router._http._tcp.local"
+        }
+      ],
+      "serviceTypes": ["http"],
+      "bonjourServiceCount": 1,
       "timestamp": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "bonjourServices": [
+    {
+      "name": "John's MacBook",
+      "type": "ssh",
+      "protocol": "tcp",
+      "host": "Johns-MacBook.local",
+      "port": 22,
+      "addresses": ["192.168.1.100"]
     }
   ],
   "scanOptions": {
     "portRange": "22,80,443",
     "timeout": 3000,
     "includeHostnames": true,
-    "includePorts": true
+    "includePorts": true,
+    "includeBonjourServices": true,
+    "bonjourServiceTypes": ["http", "ssh", "ftp", "smb"]
   }
 }</pre>    <h3>Use Cases</h3>
     <ul>

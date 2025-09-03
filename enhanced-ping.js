@@ -48,7 +48,16 @@ module.exports = function(RED) {
             }
 
             // Get configuration from message or node config
-            var targetIP = msg.payload || msg.ip || node.ipAddress;
+            // First validate if msg.payload is a valid IP/hostname before using it
+            var targetIP;
+            if (msg.payload && isValidTarget(msg.payload)) {
+                targetIP = msg.payload;
+            } else if (msg.ip && isValidTarget(msg.ip)) {
+                targetIP = msg.ip;
+            } else {
+                targetIP = node.ipAddress;
+            }
+            
             var pingCount = msg.count || node.count;
             var pingInterval = msg.interval || node.interval;
             var timeout = msg.timeout || node.timeout;
@@ -60,7 +69,7 @@ module.exports = function(RED) {
                 return;
             }
 
-            // Enhanced validation
+            // Final validation (should always pass now, but kept for safety)
             if (!isValidTarget(targetIP)) {
                 node.error("Invalid IP address or hostname format: " + targetIP, msg);
                 return;
@@ -75,11 +84,27 @@ module.exports = function(RED) {
         });
 
         function isValidTarget(target) {
+            if (!target || typeof target !== 'string') {
+                return false;
+            }
+            
             var ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
             var ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^(?:[0-9a-fA-F]{1,4}:)*::[0-9a-fA-F]{1,4}$/;
             var hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
             
-            return ipv4Regex.test(target) || ipv6Regex.test(target) || hostnameRegex.test(target);
+            // Check for IPv4 or IPv6 first
+            if (ipv4Regex.test(target) || ipv6Regex.test(target)) {
+                return true;
+            }
+            
+            // For hostnames, ensure it's not just a pure number (likely a timestamp)
+            // and must contain at least one letter or dot
+            if (hostnameRegex.test(target)) {
+                // Reject pure numeric strings (timestamps) - must have at least one letter or dot
+                return /[a-zA-Z.]/.test(target) && !(/^\d+$/.test(target));
+            }
+            
+            return false;
         }
 
         function startContinuousPing(targetIP, interval, timeout, packetSize, maxRetries, originalMsg) {

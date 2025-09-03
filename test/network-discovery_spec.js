@@ -314,4 +314,125 @@ describe('Network Discovery Node', function () {
             n1.receive({ payload: "start" });
         });
     });
+
+    it('should handle Bonjour service discovery when enabled', function (done) {
+        this.timeout(10000); // Bonjour discovery can take longer
+        
+        var flow = [
+            { 
+                id: "n1", 
+                type: "network-discovery", 
+                name: "network-discovery", 
+                subnet: "127.0.0.1", 
+                includeBonjourServices: true,
+                bonjourServiceTypes: "http,ssh",
+                bonjourTimeout: 3000,
+                wires: [["n2"]] 
+            },
+            { id: "n2", type: "helper" }
+        ];
+
+        helper.load(networkDiscoveryNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+
+            n2.on("input", function (msg) {
+                try {
+                    msg.should.have.property('payload');
+                    msg.payload.should.have.property('bonjourServicesFound');
+                    msg.payload.should.have.property('bonjourServices');
+                    msg.payload.bonjourServices.should.be.an.Array();
+                    msg.payload.scanOptions.should.have.property('includeBonjourServices', true);
+                    msg.payload.scanOptions.should.have.property('bonjourServiceTypes', ['http', 'ssh']);
+                    
+                    // Check if devices have bonjour properties
+                    if (msg.payload.devices.length > 0) {
+                        msg.payload.devices[0].should.have.property('bonjourServices');
+                        msg.payload.devices[0].should.have.property('serviceTypes');
+                        msg.payload.devices[0].should.have.property('bonjourServiceCount');
+                    }
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            });
+
+            n1.receive({ payload: "start" });
+        });
+    });
+
+    it('should override Bonjour configuration with message properties', function (done) {
+        this.timeout(10000);
+        
+        var flow = [
+            { 
+                id: "n1", 
+                type: "network-discovery", 
+                name: "network-discovery", 
+                subnet: "127.0.0.1",
+                includeBonjourServices: false,
+                wires: [["n2"]] 
+            },
+            { id: "n2", type: "helper" }
+        ];
+
+        helper.load(networkDiscoveryNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+
+            n2.on("input", function (msg) {
+                try {
+                    msg.should.have.property('payload');
+                    msg.payload.scanOptions.should.have.property('includeBonjourServices', true);
+                    msg.payload.scanOptions.should.have.property('bonjourServiceTypes', ['ftp', 'smb']);
+                    msg.payload.should.have.property('bonjourServices');
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            });
+
+            n1.receive({ 
+                includeBonjourServices: true,
+                bonjourServiceTypes: 'ftp,smb',
+                bonjourTimeout: 2000
+            });
+        });
+    });
+
+    it('should handle Bonjour discovery errors gracefully', function (done) {
+        var flow = [
+            { 
+                id: "n1", 
+                type: "network-discovery", 
+                name: "network-discovery", 
+                subnet: "127.0.0.1",
+                includeBonjourServices: true,
+                bonjourTimeout: 1000, // Very short timeout to potentially trigger errors
+                wires: [["n2"]] 
+            },
+            { id: "n2", type: "helper" }
+        ];
+
+        helper.load(networkDiscoveryNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+
+            n2.on("input", function (msg) {
+                try {
+                    // Should still complete even if Bonjour has issues
+                    msg.should.have.property('payload');
+                    msg.payload.should.have.property('devices');
+                    msg.payload.should.have.property('bonjourServices');
+                    // bonjourServices should be an array (could be empty if discovery failed)
+                    msg.payload.bonjourServices.should.be.an.Array();
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            });
+
+            n1.receive({ payload: "start" });
+        });
+    });
 });

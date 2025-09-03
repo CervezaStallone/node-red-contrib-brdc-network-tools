@@ -3,6 +3,7 @@ module.exports = function(RED) {
     const net = require('net');
     const dns = require('dns');
     const { exec } = require('child_process');
+    const bonjour = require('bonjour');
 
     function NetworkDiscoveryNode(config) {
         RED.nodes.createNode(this, config);
@@ -15,8 +16,17 @@ module.exports = function(RED) {
         node.concurrent = config.concurrent || 10;
         node.includeHostnames = config.includeHostnames || false;
         node.includePorts = config.includePorts || false;
+        node.includeBonjourServices = config.includeBonjourServices || false;
+        node.bonjourServiceTypes = config.bonjourServiceTypes || 'http,ssh,ftp,smb';
+        node.bonjourTimeout = config.bonjourTimeout || 5000;
+        
+        // Parse service types if it's a string
+        if (typeof node.bonjourServiceTypes === 'string') {
+            node.bonjourServiceTypes = node.bonjourServiceTypes.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
         
         var scanInProgress = false;
+        var bonjourInstance = null;
 
         // Add initialization logging
         node.log(`Network Discovery Node initialized:`);
@@ -38,6 +48,14 @@ module.exports = function(RED) {
             var concurrent = msg.concurrent || node.concurrent;
             var includeHostnames = msg.hasOwnProperty('includeHostnames') ? msg.includeHostnames : node.includeHostnames;
             var includePorts = msg.hasOwnProperty('includePorts') ? msg.includePorts : node.includePorts;
+            var includeBonjourServices = msg.hasOwnProperty('includeBonjourServices') ? msg.includeBonjourServices : node.includeBonjourServices;
+            var bonjourServiceTypes = msg.bonjourServiceTypes || node.bonjourServiceTypes;
+            var bonjourTimeout = msg.bonjourTimeout || node.bonjourTimeout;
+
+            // Parse service types if it's a string
+            if (typeof bonjourServiceTypes === 'string') {
+                bonjourServiceTypes = bonjourServiceTypes.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            }
 
             // Check for explicitly empty subnet configurations
             if (!subnet || subnet.trim() === '' || (config.subnet === "" && !msg.subnet)) {
@@ -51,12 +69,16 @@ module.exports = function(RED) {
             node.log(`=== Starting Discovery Process ===`);
             node.log(`Subnet: ${subnet}, Timeout: ${timeout}, Concurrent: ${concurrent}`);
             node.log(`Include hostnames: ${includeHostnames}, Include ports: ${includePorts}`);
+            node.log(`Include Bonjour services: ${includeBonjourServices}, Service types: ${bonjourServiceTypes}`);
             
-            discoverNetwork(subnet, portRange, timeout, concurrent, includeHostnames, includePorts, msg);
-        });async function discoverNetwork(subnet, portRange, timeout, concurrent, includeHostnames, includePorts, originalMsg) {
+            discoverNetwork(subnet, portRange, timeout, concurrent, includeHostnames, includePorts, includeBonjourServices, bonjourServiceTypes, bonjourTimeout, msg);
+        });
+
+        async function discoverNetwork(subnet, portRange, timeout, concurrent, includeHostnames, includePorts, includeBonjourServices, bonjourServiceTypes, bonjourTimeout, originalMsg) {
             try {
                 var ipList = generateIPList(subnet);
                 var discoveredDevices = [];
+                var bonjourServices = [];
                 var totalHosts = ipList.length;
                 var scannedHosts = 0;
 
@@ -129,18 +151,38 @@ module.exports = function(RED) {
 
                 await Promise.all(pingPromises);
 
+                // Perform Bonjour service discovery if enabled
+                if (includeBonjourServices) {
+                    node.log(`=== Starting Bonjour Service Discovery ===`);
+                    node.status({fill: "yellow", shape: "dot", text: "discovering services"});
+                    
+                    try {
+                        bonjourServices = await discoverBonjourServices(bonjourServiceTypes, bonjourTimeout);
+                        node.log(`Found ${bonjourServices.length} Bonjour services`);
+                        
+                        // Correlate Bonjour services with discovered devices
+                        correlateServicesWithDevices(discoveredDevices, bonjourServices);
+                    } catch (error) {
+                        node.warn(`Bonjour discovery failed: ${error.message}`);
+                    }
+                }
+
                 // Generate discovery report
                 var report = {
                     subnet: subnet,
                     totalHosts: totalHosts,
                     aliveHosts: discoveredDevices.length,
+                    bonjourServicesFound: bonjourServices.length,
                     scanDuration: new Date().toISOString(),
                     devices: discoveredDevices,
+                    bonjourServices: bonjourServices,
                     scanOptions: {
                         portRange: portRange,
                         timeout: timeout,
                         includeHostnames: includeHostnames,
-                        includePorts: includePorts
+                        includePorts: includePorts,
+                        includeBonjourServices: includeBonjourServices,
+                        bonjourServiceTypes: bonjourServiceTypes
                     }
                 };                
                 
@@ -485,8 +527,148 @@ module.exports = function(RED) {
             return ports;
         }
 
+        async function discoverBonjourServices(serviceTypes, timeout) {
+            return new Promise((resolve, reject) => {
+                var services = [];
+                var browsers = [];
+                var timeoutId;
+                
+                try {
+                    // Initialize Bonjour instance if not already done
+                    if (!bonjourInstance) {
+                        bonjourInstance = bonjour();
+                    }
+
+                    var completedTypes = 0;
+                    var totalTypes = serviceTypes.length;
+
+                    // Set up timeout
+                    timeoutId = setTimeout(() => {
+                        node.log(`Bonjour discovery timeout after ${timeout}ms`);
+                        cleanup();
+                        resolve(services);
+                    }, timeout);
+
+                    function cleanup() {
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                        browsers.forEach(browser => {
+                            try {
+                                browser.stop();
+                            } catch (e) {
+                                // Ignore errors during cleanup
+                            }
+                        });
+                    }
+
+                    function checkCompletion() {
+                        completedTypes++;
+                        if (completedTypes >= totalTypes) {
+                            setTimeout(() => {
+                                cleanup();
+                                resolve(services);
+                            }, 1000); // Give it a second to catch any last services
+                        }
+                    }
+
+                    // Browse for each service type
+                    serviceTypes.forEach(serviceType => {
+                        try {
+                            var browser = bonjourInstance.find({ type: serviceType }, function(service) {
+                                node.log(`Found Bonjour service: ${service.name} (${service.type}) at ${service.host}:${service.port}`);
+                                
+                                // Add service to list if not already present
+                                var existingService = services.find(s => 
+                                    s.name === service.name && 
+                                    s.type === service.type && 
+                                    s.host === service.host && 
+                                    s.port === service.port
+                                );
+                                
+                                if (!existingService) {
+                                    services.push({
+                                        name: service.name,
+                                        type: service.type,
+                                        protocol: service.protocol || 'tcp',
+                                        host: service.host,
+                                        port: service.port,
+                                        fqdn: service.fqdn,
+                                        txt: service.txt || {},
+                                        addresses: service.addresses || []
+                                    });
+                                }
+                            });
+
+                            browsers.push(browser);
+
+                            // Mark this service type as completed after a brief delay
+                            setTimeout(() => {
+                                checkCompletion();
+                            }, timeout / totalTypes);
+
+                        } catch (error) {
+                            node.log(`Error browsing for service type ${serviceType}: ${error.message}`);
+                            checkCompletion();
+                        }
+                    });
+
+                    // If no service types specified, resolve immediately
+                    if (totalTypes === 0) {
+                        cleanup();
+                        resolve(services);
+                    }
+
+                } catch (error) {
+                    node.log(`Bonjour discovery error: ${error.message}`);
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                    reject(error);
+                }
+            });
+        }
+
+        function correlateServicesWithDevices(devices, bonjourServices) {
+            devices.forEach(device => {
+                device.bonjourServices = [];
+                
+                bonjourServices.forEach(service => {
+                    // Try to match by IP address
+                    if (service.addresses && service.addresses.includes(device.ip)) {
+                        device.bonjourServices.push(service);
+                    }
+                    // Try to match by hostname
+                    else if (device.hostname && service.host === device.hostname) {
+                        device.bonjourServices.push(service);
+                    }
+                    // Try to match by resolving service host to IP
+                    else if (service.host === device.ip) {
+                        device.bonjourServices.push(service);
+                    }
+                });
+
+                // Add discovered service types to device
+                if (device.bonjourServices.length > 0) {
+                    device.serviceTypes = [...new Set(device.bonjourServices.map(s => s.type))];
+                    device.bonjourServiceCount = device.bonjourServices.length;
+                } else {
+                    device.serviceTypes = [];
+                    device.bonjourServiceCount = 0;
+                }
+            });
+        }
+
         node.on('close', function() {
             scanInProgress = false;
+            if (bonjourInstance) {
+                try {
+                    bonjourInstance.destroy();
+                    bonjourInstance = null;
+                } catch (error) {
+                    node.log(`Error destroying Bonjour instance: ${error.message}`);
+                }
+            }
             node.status({});
         });
     }

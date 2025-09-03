@@ -60,24 +60,62 @@ Output: {
 ```
 
 ### 🔍 Network Discovery
-Discover devices on your network using CIDR notation, IP ranges, or single addresses.
+Discover devices on your network using CIDR notation, IP ranges, or single addresses. Now with **Bonjour/mDNS support** for zero-configuration service discovery.
 
 **Features:**
 - CIDR subnet scanning (e.g., `192.168.1.0/24`)
 - IP range scanning (e.g., `192.168.1.1-50` or `10.13.37.1-20`)
 - Port scanning capabilities
-- Hostname resolution
+- Hostname resolution (traditional DNS)
+- **Bonjour/mDNS service discovery** (.local hostnames, service advertisements)
+- **Zero-configuration networking** support (printers, AirPlay, SSH, web servers, etc.)
+- Service type detection (HTTP, SSH, FTP, SMB, printer services)
 - Concurrent scanning with progress reporting
 - Configurable timeouts and concurrency
 
 **Usage:**
 ```
-Input: { payload: "192.168.1.0/24" }
+Input: { payload: "192.168.1.0/24", includeBonjourServices: true }
 Output: { 
-  payload: [
-    { ip: "192.168.1.1", alive: true, hostname: "router.local" },
-    { ip: "192.168.1.100", alive: true, ports: [22, 80] }
-  ]
+  payload: {
+    devices: [
+      { 
+        ip: "192.168.1.1", 
+        alive: true, 
+        hostname: "router.local",
+        bonjourServices: [
+          {
+            name: "Router Web Interface",
+            type: "http",
+            port: 80,
+            host: "router.local"
+          }
+        ],
+        serviceTypes: ["http"]
+      },
+      { 
+        ip: "192.168.1.100", 
+        alive: true, 
+        hostname: "Johns-MacBook.local",
+        ports: [22, 80],
+        bonjourServices: [
+          {
+            name: "SSH on John's Mac",
+            type: "ssh",
+            port: 22
+          }
+        ]
+      }
+    ],
+    bonjourServices: [
+      {
+        name: "Office Printer",
+        type: "printer",
+        host: "HP-LaserJet.local",
+        port: 631
+      }
+    ]
+  }
 }
 ```
 
@@ -169,6 +207,62 @@ database.cloud.com
 ```
 *Create network performance charts with statistics*
 
+## 🎛️ Bonjour/mDNS Configuration
+
+The Network Discovery node now supports **Bonjour/mDNS** (also known as zero-configuration networking) for discovering services that advertise themselves on the local network.
+
+### What is Bonjour/mDNS?
+
+Bonjour/mDNS enables automatic discovery of devices and services without requiring manual configuration. Common examples include:
+
+- **Printers** advertising print services
+- **Apple devices** (AirPlay, SSH, file sharing)
+- **Web servers** on development machines
+- **IoT devices** with web interfaces
+- **Network-attached storage** (NAS) devices
+- **Smart home devices**
+
+### Configuration Options
+
+**Enable Bonjour/mDNS Discovery:** Checkbox to enable service discovery
+
+**Service Types:** Comma-separated list of services to discover:
+- `http` - Web servers and web interfaces
+- `ssh` - SSH servers
+- `ftp` - FTP servers  
+- `smb` - Windows file sharing
+- `printer` - Network printers
+- `airplay` - Apple AirPlay devices
+- `afpovertcp` - Apple Filing Protocol
+- `nfs` - Network File System
+
+**Bonjour Timeout:** How long to wait for service responses (1000-30000ms)
+
+### Example Service Types by Device
+
+**Home Networks:**
+```
+http,ssh,printer,airplay,smb
+```
+
+**Development Networks:**
+```
+http,ssh,ftp,mongodb,redis,postgresql
+```
+
+**Office Networks:**
+```
+http,ssh,smb,printer,afpovertcp
+```
+
+### Benefits
+
+1. **Discover .local hostnames** that don't exist in DNS
+2. **Identify device types** based on advertised services  
+3. **Find network services** automatically without port scanning
+4. **Monitor service availability** in real-time
+5. **Cross-platform compatibility** (works on Windows, macOS, Linux)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -182,6 +276,18 @@ database.cloud.com
 - Ensure the subnet notation is correct (e.g., 192.168.1.0/24)
 - Check if devices respond to ping (some may have firewalls)
 - Try smaller IP ranges first
+
+**Bonjour/mDNS services not found:**
+- Not all devices advertise services via Bonjour/mDNS
+- Some networks may block multicast traffic (required for mDNS)
+- Try increasing the Bonjour timeout value
+- Check if devices are on the same network segment
+- Some enterprise firewalls block mDNS traffic
+
+**Bonjour discovery slow or incomplete:**
+- Increase the timeout value (try 10000ms for large networks)
+- Reduce the number of service types being searched
+- Some devices may advertise services slowly after network changes
 
 **Performance monitor not starting:**
 - Verify at least one target is configured
@@ -210,7 +316,16 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.1.4 (Latest)
+### v2.2.0 (Latest)
+- **🎉 NEW: Bonjour/mDNS Service Discovery** - Zero-configuration networking support
+- **Service Type Detection** - Automatically discover HTTP, SSH, FTP, SMB, printer services and more
+- **Enhanced Device Information** - Discover .local hostnames and service advertisements
+- **Cross-Platform Support** - Works on Windows, macOS, and Linux
+- **Configurable Service Types** - Specify which services to discover
+- **Service Correlation** - Link discovered services to IP addresses and devices
+- **Comprehensive Testing** - Full test coverage for new Bonjour functionality
+
+### v2.1.4
 - Organized all nodes under "networktools" category
 - Enhanced network discovery with shorthand IP ranges
 - Comprehensive network performance monitoring
