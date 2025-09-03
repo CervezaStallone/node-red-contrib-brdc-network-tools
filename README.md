@@ -316,7 +316,7 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.3.0 (Latest)
+### v2.3.1 (Latest)
 - **🔧 FIXED: Enhanced Ping Input Validation** - Fixed bug where timestamps in msg.payload would be used as host target
 - **Improved Input Logic** - Enhanced ping now properly validates msg.payload before using it as target IP/hostname
 - **Better Error Handling** - Falls back to msg.ip or node.ipAddress when msg.payload contains invalid data
