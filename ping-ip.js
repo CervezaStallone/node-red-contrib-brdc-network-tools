@@ -31,7 +31,7 @@ module.exports = function(RED) {
             // Ping configuration
             var pingConfig = {
                 timeout: node.timeout / 1000, // Convert to seconds
-                extra: ["-n", "1"] // Windows ping command for single ping
+                extra: process.platform === 'win32' ? ["-n", "1"] : ["-c", "1"] // Platform-specific ping command for single ping
             };
 
             // Perform ping

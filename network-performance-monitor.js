@@ -179,7 +179,7 @@ module.exports = function(RED) {
         async function pingTarget(target) {
             var config = {
                 timeout: node.timeout / 1000,
-                extra: ["-c", "1"]
+                extra: process.platform === 'win32' ? ["-n", "1"] : ["-c", "1"]
             };
             
             return await ping.promise.probe(target, config);
