@@ -98,16 +98,30 @@ module.exports = function(RED) {
             try {
                 var timestamp = new Date().toISOString();
 
+                // Validate and filter targets
+                var validTargets = targets.filter(target => {
+                    var isValid = isValidTarget(String(target));
+                    if (!isValid) {
+                        node.warn("Invalid target filtered out: " + target);
+                    }
+                    return isValid;
+                });
+
+                if (validTargets.length === 0) {
+                    node.error("No valid targets to ping", originalMsg);
+                    return;
+                }
+
                 // Ping all targets concurrently
-                var pingPromises = targets.map(async (target) => {
+                var pingPromises = validTargets.map(async (target) => {
                     try {
                         var result = await pingTarget(target);
                         var measurement = {
                             target: target,
                             timestamp: timestamp,
                             alive: result.alive,
-                            latency: result.time || null,
-                            packetLoss: result.packetLoss || 0
+                            latency: result.alive && typeof result.time === 'number' ? result.time : null,
+                            packetLoss: result.alive && result.packetLoss !== null && result.packetLoss !== undefined && result.packetLoss !== "unknown" ? parseFloat(result.packetLoss) : null
                         };
 
                         // Store in performance data
@@ -133,7 +147,7 @@ module.exports = function(RED) {
                             alive: false,
                             error: error.message,
                             latency: null,
-                            packetLoss: 100
+                            packetLoss: null
                         };
                         
                         return errorMeasurement;
@@ -177,12 +191,63 @@ module.exports = function(RED) {
         }
 
         async function pingTarget(target) {
-            var config = {
+            var pingConfig = {
                 timeout: node.timeout / 1000,
-                extra: process.platform === 'win32' ? ["-n", "1"] : ["-c", "1"]
+                extra: process.platform === 'win32' ? 
+                    ["-n", "1", "-l", "32"] : 
+                    ["-c", "1", "-s", "32"]
             };
             
-            return await ping.promise.probe(target, config);
+            try {
+                var result = await ping.promise.probe(target, pingConfig);
+                
+                // Ensure we have proper values
+                if (!result.alive) {
+                    result.time = null;
+                    result.packetLoss = null;
+                }
+                
+                return result;
+            } catch (error) {
+                return {
+                    host: target,
+                    alive: false,
+                    time: null,
+                    packetLoss: null,
+                    output: error.message
+                };
+            }
+        }
+
+        function isValidTarget(target) {
+            if (!target || typeof target !== 'string') {
+                return false;
+            }
+            
+            // Check if it's a timestamp (all digits, typically 10-13 digits for Unix timestamp)
+            if (/^\d{10,}$/.test(target)) {
+                return false;
+            }
+            
+            // IPv4 validation
+            const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (ipv4Regex.test(target)) {
+                return true;
+            }
+            
+            // IPv6 validation
+            const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^(?:[0-9a-fA-F]{1,4}:)*::[0-9a-fA-F]{1,4}$/;
+            if (ipv6Regex.test(target)) {
+                return true;
+            }
+            
+            // Hostname validation - must have at least one dot
+            const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+            if (hostnameRegex.test(target) && target.length > 0 && target.length <= 253) {
+                return true;
+            }
+            
+            return false;
         }
 
         function calculateAggregateStats(measurements) {

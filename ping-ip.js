@@ -15,12 +15,11 @@ module.exports = function(RED) {
             if (!targetIP) {
                 node.error("No IP address provided");
                 return;
-            }            // Validate IP address format (basic validation)
-            var ipv4Regex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-            var ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
-            var hostnameRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            
-            if (!ipv4Regex.test(targetIP) && !ipv6Regex.test(targetIP) && !hostnameRegex.test(targetIP)) {
+            }
+
+            // Convert to string and validate IP address format
+            targetIP = String(targetIP);
+            if (!isValidTarget(targetIP)) {
                 node.error("Invalid IP address format: " + targetIP);
                 return;
             }
@@ -76,6 +75,37 @@ module.exports = function(RED) {
                     node.send([null, errorMsg]); // Send to second output (error)
                 });
         });
+
+        function isValidTarget(target) {
+            if (!target || typeof target !== 'string') {
+                return false;
+            }
+            
+            // Check if it's a timestamp (all digits, typically 10-13 digits for Unix timestamp)
+            if (/^\d{10,}$/.test(target)) {
+                return false;
+            }
+            
+            // IPv4 validation
+            const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (ipv4Regex.test(target)) {
+                return true;
+            }
+            
+            // IPv6 validation
+            const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^(?:[0-9a-fA-F]{1,4}:)*::[0-9a-fA-F]{1,4}$/;
+            if (ipv6Regex.test(target)) {
+                return true;
+            }
+            
+            // Hostname validation - must have at least one dot (like the original)
+            const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+            if (hostnameRegex.test(target) && target.length > 0 && target.length <= 253) {
+                return true;
+            }
+            
+            return false;
+        }
 
         node.on('close', function() {
             node.status({});

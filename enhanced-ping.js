@@ -48,14 +48,18 @@ module.exports = function(RED) {
             }
 
             // Get configuration from message or node config
-            // First validate if msg.payload is a valid IP/hostname before using it
-            var targetIP;
-            if (msg.payload && isValidTarget(msg.payload)) {
-                targetIP = msg.payload;
-            } else if (msg.ip && isValidTarget(msg.ip)) {
-                targetIP = msg.ip;
-            } else {
-                targetIP = node.ipAddress;
+            var targetIP = msg.payload || msg.ip || node.ipAddress;
+            
+            if (!targetIP) {
+                node.error("No IP address provided", msg);
+                return;
+            }
+
+            // Convert to string and validate IP address format
+            targetIP = String(targetIP);
+            if (!isValidTarget(targetIP)) {
+                node.error("Invalid IP address or hostname format: " + targetIP, msg);
+                return;
             }
             
             var pingCount = msg.count || node.count;
@@ -63,17 +67,6 @@ module.exports = function(RED) {
             var timeout = msg.timeout || node.timeout;
             var packetSize = msg.size || node.size;
             var maxRetries = msg.retries || node.retries;
-            
-            if (!targetIP) {
-                node.error("No IP address provided", msg);
-                return;
-            }
-
-            // Final validation (should always pass now, but kept for safety)
-            if (!isValidTarget(targetIP)) {
-                node.error("Invalid IP address or hostname format: " + targetIP, msg);
-                return;
-            }
 
             // Single ping or continuous ping
             if (pingInterval > 0) {
@@ -85,6 +78,11 @@ module.exports = function(RED) {
 
         function isValidTarget(target) {
             if (!target || typeof target !== 'string') {
+                return false;
+            }
+            
+            // Check if it's a timestamp (all digits, typically 10-13 digits for Unix timestamp)
+            if (/^\d{10,}$/.test(target)) {
                 return false;
             }
             
@@ -154,7 +152,7 @@ module.exports = function(RED) {
                     .then(function(result) {
                         var timestamp = new Date().toISOString();
                         var pingResult = {
-                            host: result.host,
+                            host: targetIP,
                             alive: result.alive,
                             time: result.time,
                             min: result.min,
