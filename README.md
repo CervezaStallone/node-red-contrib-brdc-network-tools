@@ -316,13 +316,12 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.3.4 (Latest)
+### v2.3.5 (Latest)
 - **🔧 FIXED: Inject Node Compatibility** - All nodes now handle inject node timestamps properly
 - **Enhanced Fallback Logic** - Enhanced-ping and ping-ip nodes fall back to configured IP when msg.payload contains timestamps
 - **Network Performance Monitor Improvements** - Fixed ping result handling and added input validation
 - **Consistent Behavior** - All nodes now use the same fallback validation approach for better user experience
 - **Better Error Handling** - Improved ping result processing and error states
-- **Comprehensive Testing** - All 79 tests passing with new fallback behavior validation
 
 ### v2.3.3
 - **🔧 FIXED: Network Performance Monitor** - Fixed ping configuration and result processing
