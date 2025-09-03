@@ -97,7 +97,6 @@ module.exports = function(RED) {
         async function performMeasurement(targets, originalMsg) {
             try {
                 var timestamp = new Date().toISOString();
-                var measurements = [];
 
                 // Ping all targets concurrently
                 var pingPromises = targets.map(async (target) => {
@@ -126,7 +125,6 @@ module.exports = function(RED) {
                         // Check thresholds and generate alerts
                         checkThresholds(target, measurement);
 
-                        measurements.push(measurement);
                         return measurement;
                     } catch (error) {
                         var errorMeasurement = {
@@ -138,7 +136,6 @@ module.exports = function(RED) {
                             packetLoss: 100
                         };
                         
-                        measurements.push(errorMeasurement);
                         return errorMeasurement;
                     }
                 });
@@ -151,7 +148,7 @@ module.exports = function(RED) {
                 var outputMsg = {
                     payload: {
                         timestamp: timestamp,
-                        measurements: measurements,
+                        measurements: results,
                         aggregate: aggregateStats,
                         alerts: getRecentAlerts(5)
                     },
@@ -182,7 +179,7 @@ module.exports = function(RED) {
         async function pingTarget(target) {
             var config = {
                 timeout: node.timeout / 1000,
-                extra: ["-n", "1"]
+                extra: ["-c", "1"]
             };
             
             return await ping.promise.probe(target, config);
