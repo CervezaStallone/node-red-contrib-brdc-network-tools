@@ -14,7 +14,7 @@ describe('Enhanced Ping Node - Timestamp Fix', function () {
         helper.stopServer(done);
     });
 
-    it('should error when msg.payload contains a timestamp', function (done) {
+    it('should use node.ipAddress when msg.payload contains a timestamp', function (done) {
         var flow = [
             { 
                 id: "n1", 
@@ -30,27 +30,32 @@ describe('Enhanced Ping Node - Timestamp Fix', function () {
 
         helper.load(enhancedPingNode, flow, function () {
             var n1 = helper.getNode("n1");
-            var errorCaught = false;
-
-            n1.on("call:error", function (call) {
-                errorCaught = true;
-                call.firstArg.should.match(/Invalid IP address or hostname format: 1693766400000/);
-                done();
-            });
-
-            // Send message with timestamp in payload (this should error)
-            n1.receive({ payload: "1693766400000" });
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
             
-            // Fallback timeout
-            setTimeout(() => {
-                if (!errorCaught) {
-                    done(new Error("Expected error was not caught"));
+            var responseReceived = false;
+            var handleResponse = function (msg) {
+                if (!responseReceived) {
+                    responseReceived = true;
+                    try {
+                        msg.should.have.property('payload');
+                        msg.should.have.property('ip', '127.0.0.1'); // Should use configured IP, not timestamp
+                        done();
+                    } catch(err) {
+                        done(err);
+                    }
                 }
-            }, 1000);
+            };
+
+            n2.on("input", handleResponse); // Success output
+            n3.on("input", handleResponse); // Failure output (localhost should respond)
+
+            // Send message with timestamp in payload (should fall back to configured IP)
+            n1.receive({ payload: "1693766400000" });
         });
     });
 
-    it('should error when msg.payload contains an ISO timestamp', function (done) {
+    it('should use node.ipAddress when msg.payload contains an ISO timestamp', function (done) {
         var flow = [
             { 
                 id: "n1", 
@@ -66,23 +71,28 @@ describe('Enhanced Ping Node - Timestamp Fix', function () {
 
         helper.load(enhancedPingNode, flow, function () {
             var n1 = helper.getNode("n1");
-            var errorCaught = false;
-
-            n1.on("call:error", function (call) {
-                errorCaught = true;
-                call.firstArg.should.match(/Invalid IP address or hostname format: 2023-09-03T12:00:00.000Z/);
-                done();
-            });
-
-            // Send message with ISO timestamp in payload (this should error)
-            n1.receive({ payload: "2023-09-03T12:00:00.000Z" });
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
             
-            // Fallback timeout
-            setTimeout(() => {
-                if (!errorCaught) {
-                    done(new Error("Expected error was not caught"));
+            var responseReceived = false;
+            var handleResponse = function (msg) {
+                if (!responseReceived) {
+                    responseReceived = true;
+                    try {
+                        msg.should.have.property('payload');
+                        msg.should.have.property('ip', '127.0.0.1'); // Should use configured IP, not ISO timestamp
+                        done();
+                    } catch(err) {
+                        done(err);
+                    }
                 }
-            }, 1000);
+            };
+
+            n2.on("input", handleResponse); // Success output
+            n3.on("input", handleResponse); // Failure output (localhost should respond)
+
+            // Send message with ISO timestamp in payload (should fall back to configured IP)
+            n1.receive({ payload: "2023-09-03T12:00:00.000Z" });
         });
     });
 
@@ -156,7 +166,7 @@ describe('Enhanced Ping Node - Timestamp Fix', function () {
         });
     });
 
-    it('should error when msg.payload is invalid even if msg.ip is valid', function (done) {
+    it('should use msg.ip when msg.payload is invalid and msg.ip is valid', function (done) {
         var flow = [
             { 
                 id: "n1", 
@@ -172,26 +182,31 @@ describe('Enhanced Ping Node - Timestamp Fix', function () {
 
         helper.load(enhancedPingNode, flow, function () {
             var n1 = helper.getNode("n1");
-            var errorCaught = false;
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
+            
+            var responseReceived = false;
+            var handleResponse = function (msg) {
+                if (!responseReceived) {
+                    responseReceived = true;
+                    try {
+                        msg.should.have.property('payload');
+                        msg.should.have.property('ip', '127.0.0.1'); // Should use msg.ip, not payload or node config
+                        done();
+                    } catch(err) {
+                        done(err);
+                    }
+                }
+            };
 
-            n1.on("call:error", function (call) {
-                errorCaught = true;
-                call.firstArg.should.match(/Invalid IP address or hostname format: 1693766400000/);
-                done();
-            });
+            n2.on("input", handleResponse); // Success output  
+            n3.on("input", handleResponse); // Failure output (localhost should respond)
 
-            // Send message with invalid payload - should error immediately
+            // Send message with invalid payload but valid msg.ip - should use msg.ip
             n1.receive({ 
                 payload: "1693766400000", // Invalid timestamp 
-                ip: "127.0.0.1" // Valid IP that won't be used
+                ip: "127.0.0.1" // Valid IP that should be used
             });
-            
-            // Fallback timeout
-            setTimeout(() => {
-                if (!errorCaught) {
-                    done(new Error("Expected error was not caught"));
-                }
-            }, 1000);
         });
     });
 });

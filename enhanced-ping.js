@@ -48,18 +48,14 @@ module.exports = function(RED) {
             }
 
             // Get configuration from message or node config
-            var targetIP = msg.payload || msg.ip || node.ipAddress;
-            
-            if (!targetIP) {
-                node.error("No IP address provided", msg);
-                return;
-            }
-
-            // Convert to string and validate IP address format
-            targetIP = String(targetIP);
-            if (!isValidTarget(targetIP)) {
-                node.error("Invalid IP address or hostname format: " + targetIP, msg);
-                return;
+            // First validate if msg.payload is a valid IP/hostname before using it
+            var targetIP;
+            if (msg.payload && isValidTarget(String(msg.payload))) {
+                targetIP = String(msg.payload);
+            } else if (msg.ip && isValidTarget(String(msg.ip))) {
+                targetIP = String(msg.ip);
+            } else {
+                targetIP = node.ipAddress;
             }
             
             var pingCount = msg.count || node.count;
@@ -67,6 +63,17 @@ module.exports = function(RED) {
             var timeout = msg.timeout || node.timeout;
             var packetSize = msg.size || node.size;
             var maxRetries = msg.retries || node.retries;
+            
+            if (!targetIP) {
+                node.error("No IP address provided", msg);
+                return;
+            }
+
+            // Final validation (should always pass now, but kept for safety)
+            if (!isValidTarget(targetIP)) {
+                node.error("Invalid IP address or hostname format: " + targetIP, msg);
+                return;
+            }
 
             // Single ping or continuous ping
             if (pingInterval > 0) {

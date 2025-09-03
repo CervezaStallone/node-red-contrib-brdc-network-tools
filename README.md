@@ -316,7 +316,27 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.3.1 (Latest)
+### v2.3.4 (Latest)
+- **🔧 FIXED: Inject Node Compatibility** - All nodes now handle inject node timestamps properly
+- **Enhanced Fallback Logic** - Enhanced-ping and ping-ip nodes fall back to configured IP when msg.payload contains timestamps
+- **Network Performance Monitor Improvements** - Fixed ping result handling and added input validation
+- **Consistent Behavior** - All nodes now use the same fallback validation approach for better user experience
+- **Better Error Handling** - Improved ping result processing and error states
+- **Comprehensive Testing** - All 79 tests passing with new fallback behavior validation
+
+### v2.3.3
+- **🔧 FIXED: Network Performance Monitor** - Fixed ping configuration and result processing
+- **Improved Ping Results** - Better handling of "unknown" values and failed pings
+- **Enhanced Validation** - Added input validation to network performance monitor
+- **Platform Compatibility** - Improved ping command arguments for cross-platform support
+
+### v2.3.2
+- **🔧 FIXED: Enhanced Ping Timestamp Validation** - Changed to direct validation approach
+- **Ping-IP IPv6 Support** - Added proper IPv6 address validation
+- **Improved Hostname Validation** - More strict hostname format checking
+- **Test Coverage** - Enhanced test suite for edge cases and validation scenarios
+
+### v2.3.1
 - **🔧 FIXED: Enhanced Ping Input Validation** - Fixed bug where timestamps in msg.payload would be used as host target
 - **Improved Input Logic** - Enhanced ping now properly validates msg.payload before using it as target IP/hostname
 - **Better Error Handling** - Falls back to msg.ip or node.ipAddress when msg.payload contains invalid data
