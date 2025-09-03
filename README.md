@@ -316,7 +316,14 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.2.0 (Latest)
+### v2.3.0 (Latest)
+- **🔧 FIXED: Enhanced Ping Input Validation** - Fixed bug where timestamps in msg.payload would be used as host target
+- **Improved Input Logic** - Enhanced ping now properly validates msg.payload before using it as target IP/hostname
+- **Better Error Handling** - Falls back to msg.ip or node.ipAddress when msg.payload contains invalid data
+- **Timestamp Rejection** - Numeric timestamps and ISO date strings are now properly rejected
+- **Comprehensive Testing** - Added extensive tests for input validation scenarios
+
+### v2.2.0
 - **🎉 NEW: Bonjour/mDNS Service Discovery** - Zero-configuration networking support
 - **Service Type Detection** - Automatically discover HTTP, SSH, FTP, SMB, printer services and more
 - **Enhanced Device Information** - Discover .local hostnames and service advertisements
