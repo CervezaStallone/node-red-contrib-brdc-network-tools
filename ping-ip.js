@@ -10,15 +10,22 @@ module.exports = function(RED) {
         node.timeout = config.timeout || 5000;
         node.name = config.name;        node.on('input', function(msg) {
             // Get IP address from input message first, then config
-            var targetIP = msg.payload || msg.ip || node.ipAddress;
+            // First validate if msg.payload is a valid IP/hostname before using it
+            var targetIP;
+            if (msg.payload && isValidTarget(String(msg.payload))) {
+                targetIP = String(msg.payload);
+            } else if (msg.ip && isValidTarget(String(msg.ip))) {
+                targetIP = String(msg.ip);
+            } else {
+                targetIP = node.ipAddress;
+            }
             
             if (!targetIP) {
                 node.error("No IP address provided");
                 return;
             }
 
-            // Convert to string and validate IP address format
-            targetIP = String(targetIP);
+            // Final validation (should always pass now, but kept for safety)
             if (!isValidTarget(targetIP)) {
                 node.error("Invalid IP address format: " + targetIP);
                 return;

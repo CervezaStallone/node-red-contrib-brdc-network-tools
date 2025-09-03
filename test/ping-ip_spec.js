@@ -204,31 +204,71 @@ describe('ping-ip Node', function () {
                 }
             }, 1000);
         });
-    });    it('should error with invalid IP address format', function (done) {
+    });    it('should fall back to configured IP when payload is invalid', function (done) {
         var flow = [
-            { id: "n1", type: "ping-ip", wires: [["n2"], ["n3"]] },
+            { id: "n1", type: "ping-ip", ipAddress: "127.0.0.1", wires: [["n2"], ["n3"]] },
             { id: "n2", type: "helper" },
             { id: "n3", type: "helper" }
         ];
         
         helper.load(pingNode, flow, function () {
             var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
             
-            var errorCaught = false;
-            n1.on("call:error", function (call) {
-                errorCaught = true;
-                call.firstArg.should.match(/Invalid IP address format/);
-                done();
-            });
-
-            n1.receive({ payload: "invalid-ip-format" });
-            
-            // Fallback timeout
-            setTimeout(() => {
-                if (!errorCaught) {
-                    done(new Error("Expected error was not caught"));
+            var responseReceived = false;
+            var handleResponse = function (msg) {
+                if (!responseReceived) {
+                    responseReceived = true;
+                    try {
+                        msg.should.have.property('payload');
+                        msg.should.have.property('ip', '127.0.0.1'); // Should use configured IP, not invalid payload
+                        done();
+                    } catch(err) {
+                        done(err);
+                    }
                 }
-            }, 1000);
+            };
+
+            n2.on("input", handleResponse); // Success output
+            n3.on("input", handleResponse); // Failure output (localhost should respond)
+
+            // Send invalid payload - should fall back to configured IP
+            n1.receive({ payload: "invalid-ip-format" });
+        });
+    });
+
+    it('should fall back to configured IP when payload is a timestamp', function (done) {
+        var flow = [
+            { id: "n1", type: "ping-ip", ipAddress: "127.0.0.1", wires: [["n2"], ["n3"]] },
+            { id: "n2", type: "helper" },
+            { id: "n3", type: "helper" }
+        ];
+        
+        helper.load(pingNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
+            
+            var responseReceived = false;
+            var handleResponse = function (msg) {
+                if (!responseReceived) {
+                    responseReceived = true;
+                    try {
+                        msg.should.have.property('payload');
+                        msg.should.have.property('ip', '127.0.0.1'); // Should use configured IP, not timestamp
+                        done();
+                    } catch(err) {
+                        done(err);
+                    }
+                }
+            };
+
+            n2.on("input", handleResponse); // Success output
+            n3.on("input", handleResponse); // Failure output (localhost should respond)
+
+            // Send timestamp payload (like from inject node) - should fall back to configured IP
+            n1.receive({ payload: 1756893557132 });
         });
     });
 
