@@ -178,6 +178,34 @@ describe('ping-ip Node', function () {
 
             n1.receive({ payload: "google.com" });
         });
+    });
+
+    it('should accept single-label LAN hostnames without a dot', function (done) {
+        var flow = [
+            { id: "n1", type: "ping-ip", timeout: 5000, wires: [["n2"], ["n3"]] },
+            { id: "n2", type: "helper" },
+            { id: "n3", type: "helper" }
+        ];
+
+        helper.load(pingNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+            var n3 = helper.getNode("n3");
+
+            function handleResponse(msg) {
+                try {
+                    msg.should.have.property('ip', 'localhost');
+                    done();
+                } catch(err) {
+                    done(err);
+                }
+            }
+
+            n2.on("input", handleResponse);
+            n3.on("input", handleResponse);
+
+            n1.receive({ payload: "localhost" });
+        });
     });    it('should error when no IP address is provided', function (done) {
         var flow = [
             { id: "n1", type: "ping-ip", wires: [["n2"], ["n3"]] },
@@ -233,8 +261,8 @@ describe('ping-ip Node', function () {
             n2.on("input", handleResponse); // Success output
             n3.on("input", handleResponse); // Failure output (localhost should respond)
 
-            // Send invalid payload - should fall back to configured IP
-            n1.receive({ payload: "invalid-ip-format" });
+            // Send invalid payload (leading hyphen is not a valid hostname label) - should fall back to configured IP
+            n1.receive({ payload: "-invalid-host-format" });
         });
     });
 

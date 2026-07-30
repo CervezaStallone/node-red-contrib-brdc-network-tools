@@ -241,12 +241,13 @@ module.exports = function(RED) {
                 return true;
             }
             
-            // Hostname validation - must have at least one dot
-            const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+            // Hostname validation - single-label LAN hostnames (e.g. "nas") and FQDNs are both allowed
+            const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
             if (hostnameRegex.test(target) && target.length > 0 && target.length <= 253) {
-                return true;
+                // Reject pure numeric strings (timestamps) - must have at least one letter or dot
+                return /[a-zA-Z.]/.test(target) && !(/^\d+$/.test(target));
             }
-            
+
             return false;
         }
 

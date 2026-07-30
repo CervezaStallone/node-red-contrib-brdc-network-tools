@@ -10,12 +10,12 @@ Install directly from the Node-RED palette manager or via npm:
 npm install node-red-contrib-network-tools
 ```
 
-After installation, restart Node-RED and you'll find all nodes under the **"networktools"** category in the palette.
+After installation, restart Node-RED and you'll find all nodes under the **"brdc-network-nodes"** category in the palette.
 
 ## Quick Start
 
 1. **Install the package** using the palette manager or npm
-2. **Drag nodes** from the "networktools" category into your flow
+2. **Drag nodes** from the "brdc-network-nodes" category into your flow
 3. **Configure targets** (IP addresses, hostnames, or network ranges)
 4. **Deploy** and start monitoring your network!
 
@@ -147,7 +147,7 @@ Output: {
 
 ## Configuration Tips
 
-All nodes are organized under **"networktools"** in the Node-RED palette for easy access.
+All nodes are organized under **"brdc-network-nodes"** in the Node-RED palette for easy access.
 
 ### Best Practices
 - **Start small**: Begin with a single target before monitoring multiple hosts
@@ -321,7 +321,11 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 - **Enhanced Fallback Logic** - Enhanced-ping and ping-ip nodes fall back to configured IP when msg.payload contains timestamps
 - **Network Performance Monitor Improvements** - Fixed ping result handling and added input validation
 - **Consistent Behavior** - All nodes now use the same fallback validation approach for better user experience
+- **Consistent Hostname Validation** - ping-ip and network-performance-monitor now accept single-label LAN hostnames (e.g. `nas`, `raspberrypi`), matching enhanced-ping
 - **Better Error Handling** - Improved ping result processing and error states
+- **Docs** - Corrected palette category name in README (was documented as "networktools", nodes actually register under "brdc-network-nodes")
+- **Packaging** - Added an npm `files` allowlist so debug/dev scripts no longer ship in the published package
+- **Dev** - Bumped `mocha` to v11 to fix the test runner crashing on newer Node.js versions
 
 ### v2.3.3
 - **🔧 FIXED: Network Performance Monitor** - Fixed ping configuration and result processing
@@ -352,7 +356,7 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 - **Comprehensive Testing** - Full test coverage for new Bonjour functionality
 
 ### v2.1.4
-- Organized all nodes under "networktools" category
+- Organized all nodes under "brdc-network-nodes" category
 - Enhanced network discovery with shorthand IP ranges
 - Comprehensive network performance monitoring
 - Full English documentation and help text

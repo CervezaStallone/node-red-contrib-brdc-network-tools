@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-network-tools",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Comprehensive network monitoring and discovery tools for Node-RED with Bonjour/mDNS support",
   "keywords": [
     "node-red",
@@ -26,6 +26,17 @@
     }
   },
   "main": "ping-ip.js",
+  "files": [
+    "ping-ip.js",
+    "ping-ip.html",
+    "enhanced-ping.js",
+    "enhanced-ping.html",
+    "network-discovery.js",
+    "network-discovery.html",
+    "network-performance-monitor.js",
+    "network-performance-monitor.html",
+    "README.md"
+  ],
   "scripts": {
     "test": "mocha test/**/*_spec.js",
     "test:watch": "mocha test/**/*_spec.js --watch",
@@ -39,7 +50,7 @@
     "ping": "^0.4.4"
   },
   "devDependencies": {
-    "mocha": "^10.8.2",
+    "mocha": "^11.7.6",
     "node-red": "^4.0.9",
     "node-red-node-test-helper": "^0.3.4",
     "should": "^13.2.3",

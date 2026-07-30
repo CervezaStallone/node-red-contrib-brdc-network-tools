@@ -56,6 +56,32 @@ describe('Network Performance Monitor Node', function () {
         });
     });
 
+    it('should accept single-label LAN hostnames without a dot', function (done) {
+        var flow = [
+            { id: "n1", type: "network-performance-monitor", name: "network-performance-monitor", wires: [["n2"], ["n3"]] },
+            { id: "n2", type: "helper" },
+            { id: "n3", type: "helper" }
+        ];
+
+        helper.load(networkPerformanceMonitorNode, flow, function () {
+            var n1 = helper.getNode("n1");
+            var n2 = helper.getNode("n2");
+
+            n2.on("input", function (msg) {
+                try {
+                    msg.payload.measurements.should.be.an.Array();
+                    msg.payload.measurements.length.should.equal(1);
+                    msg.payload.measurements[0].should.have.property('target', 'localhost');
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            });
+
+            n1.receive({ targets: ["localhost"] });
+        });
+    });
+
     it('should start and stop continuous monitoring', function (done) {
         var flow = [
             { id: "n1", type: "network-performance-monitor", name: "network-performance-monitor", targets: ["127.0.0.1"], interval: 100, wires: [["n2"], ["n3"]] },
