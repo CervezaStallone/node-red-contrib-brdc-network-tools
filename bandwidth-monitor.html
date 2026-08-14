@@ -1,0 +1,110 @@
+<script type="text/javascript">
+    RED.nodes.registerType('bandwidth-monitor', {
+        category: 'brdc-network-nodes',
+        color: '#009688',
+        defaults: {
+            name: {value: ""},
+            testUrl: {value: "https://speed.cloudflare.com/__down?bytes=10000000"},
+            timeout: {value: 15000, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || "bandwidth-monitor";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "bandwidth monitor",
+        oneditprepare: function() {
+            // Initialize timeout field
+            if (!this.timeout) {
+                $("#node-input-timeout").val(15000);
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="bandwidth-monitor">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-testUrl"><i class="fa fa-globe"></i> Test URL</label>
+        <input type="text" id="node-input-testUrl" placeholder="https://speed.cloudflare.com/__down?bytes=10000000">
+        <div class="form-tips">
+            <strong>Tip:</strong> A public download-speed-test endpoint. Can be overridden with <code>msg.testUrl</code>
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" placeholder="15000" min="1000" max="60000">
+        <div class="form-tips">
+            Timeout in milliseconds for the download request
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="bandwidth-monitor">
+    <p>A node that measures download bandwidth by timing a GET request against a test URL.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">testUrl <span class="property-type">string</span></dt>
+        <dd>Overrides the configured test URL</dd>
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Overrides the configured timeout (ms)</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Success output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>testUrl</code> - the URL that was tested</li>
+                        <li><code>bytesReceived</code> - total bytes downloaded</li>
+                        <li><code>elapsedSeconds</code> - time taken in seconds</li>
+                        <li><code>mbps</code> - measured throughput in megabits per second</li>
+                        <li><code>timestamp</code> - ISO timestamp of when the test completed</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+        <li>Failure output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>error</code> - error message describing the failure</li>
+                        <li><code>testUrl</code> - the URL that was tested</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+    </ol>
+
+    <h3>Details</h3>
+    <p>This node performs an HTTP(S) GET request against a test URL and measures the effective download
+    throughput based on the time from request start to response completion.</p>
+    <p>The test URL can be:</p>
+    <ul>
+        <li>Configured in the node properties</li>
+        <li>Passed in <code>msg.testUrl</code></li>
+    </ul>
+    <p>The node has two outputs:</p>
+    <ul>
+        <li><strong>Success (top):</strong> When the download completes with a 2xx response</li>
+        <li><strong>Failure (bottom):</strong> When the request errors, times out, or returns a non-2xx status</li>
+    </ul>
+    <p>The node status shows the current state: testing, measured Mbps on success, or an error indicator on failure.</p>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node (shown in the flow)</p>
+    <p><strong>Test URL:</strong> The download-speed-test endpoint to use. Defaults to a Cloudflare speed test endpoint</p>
+    <p><strong>Timeout:</strong> Maximum wait time in milliseconds. Default is 15000ms</p>
+</script>

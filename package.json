@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-network-tools",
-  "version": "2.3.6",
-  "description": "Comprehensive network monitoring and discovery tools for Node-RED with Bonjour/mDNS support",
+  "version": "3.0.0",
+  "description": "Comprehensive network monitoring, discovery, and diagnostic tools for Node-RED with Bonjour/mDNS, DNS, TCP port checking, traceroute, bandwidth, and SNMP support",
   "keywords": [
     "node-red",
     "ping",
@@ -15,14 +15,24 @@
     "bonjour",
     "mdns",
     "zeroconf",
-    "service-discovery"
+    "service-discovery",
+    "dns",
+    "traceroute",
+    "snmp",
+    "port-scan",
+    "bandwidth"
   ],
   "node-red": {
     "nodes": {
       "ping-ip": "ping-ip.js",
       "enhanced-ping": "enhanced-ping.js",
       "network-discovery": "network-discovery.js",
-      "network-performance-monitor": "network-performance-monitor.js"
+      "network-performance-monitor": "network-performance-monitor.js",
+      "dns-lookup": "dns-lookup.js",
+      "tcp-port-check": "tcp-port-check.js",
+      "traceroute": "traceroute.js",
+      "bandwidth-monitor": "bandwidth-monitor.js",
+      "snmp-poll": "snmp-poll.js"
     }
   },
   "main": "ping-ip.js",
@@ -35,7 +45,19 @@
     "network-discovery.html",
     "network-performance-monitor.js",
     "network-performance-monitor.html",
-    "README.md"
+    "dns-lookup.js",
+    "dns-lookup.html",
+    "tcp-port-check.js",
+    "tcp-port-check.html",
+    "traceroute.js",
+    "traceroute.html",
+    "bandwidth-monitor.js",
+    "bandwidth-monitor.html",
+    "snmp-poll.js",
+    "snmp-poll.html",
+    "img/logo.png",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "mocha test/**/*_spec.js",
@@ -44,9 +66,14 @@
     "pack-build": "npm pack --pack-destination ./build"
   },
   "author": "Brian Rodriguez - BRDC.nl",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
+  "funding": {
+    "type": "buymeacoffee",
+    "url": "https://buymeacoffee.com/Cervezastalone"
+  },
   "dependencies": {
     "bonjour": "3.5.0",
+    "net-snmp": "3.26.3",
     "ping": "^0.4.4"
   },
   "devDependencies": {

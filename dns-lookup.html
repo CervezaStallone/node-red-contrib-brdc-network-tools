@@ -1,0 +1,135 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dns-lookup', {
+        category: 'brdc-network-nodes',
+        color: '#9C27B0',
+        defaults: {
+            name: {value: ""},
+            hostname: {value: ""},
+            recordType: {value: "A"},
+            timeout: {value: 5000, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || this.hostname || "dns-lookup";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "dns lookup",
+        oneditprepare: function() {
+            if (!this.timeout) {
+                $("#node-input-timeout").val(5000);
+            }
+            if (!this.recordType) {
+                $("#node-input-recordType").val("A");
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dns-lookup">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-hostname"><i class="fa fa-globe"></i> Hostname/IP</label>
+        <input type="text" id="node-input-hostname" placeholder="google.com or leave empty to use msg.payload">
+        <div class="form-tips">
+            <strong>Tip:</strong> Leave empty to use <code>msg.payload</code> as the lookup target
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-recordType"><i class="fa fa-list"></i> Record Type</label>
+        <select id="node-input-recordType">
+            <option value="A">A</option>
+            <option value="AAAA">AAAA</option>
+            <option value="CNAME">CNAME</option>
+            <option value="MX">MX</option>
+            <option value="TXT">TXT</option>
+            <option value="NS">NS</option>
+            <option value="SRV">SRV</option>
+            <option value="PTR">PTR (reverse)</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" placeholder="5000" min="1000" max="30000">
+        <div class="form-tips">
+            Timeout in milliseconds (1000-30000)
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dns-lookup">
+    <p>A node that performs DNS lookups (forward or reverse) using Node's built-in <code>dns</code> module.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Hostname or IP address to look up (if not configured in the node)</dd>
+        <dt class="optional">recordType <span class="property-type">string</span></dt>
+        <dd>Overrides the configured record type (e.g. A, AAAA, MX, TXT, NS, SRV, PTR)</dd>
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Overrides the configured timeout in milliseconds</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Success output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>records</code> - the resolved DNS records</li>
+                        <li><code>target</code> - the hostname/IP that was looked up</li>
+                        <li><code>recordType</code> - the DNS record type used</li>
+                        <li><code>timestamp</code> - ISO timestamp of when the lookup completed</li>
+                    </ul>
+                </dd>
+                <dt>target <span class="property-type">string</span></dt>
+                <dd>the hostname/IP that was looked up</dd>
+            </dl>
+        </li>
+        <li>Failure output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>error</code> - the error message (or "DNS lookup timed out")</li>
+                        <li><code>code</code> - the DNS error code, if any</li>
+                        <li><code>target</code> - the hostname/IP that was looked up</li>
+                        <li><code>recordType</code> - the DNS record type used</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+    </ol>
+
+    <h3>Details</h3>
+    <p>This node resolves DNS records for a hostname, or performs a reverse (PTR) lookup for an IP address.</p>
+    <p>The target can be:</p>
+    <ul>
+        <li>Configured in the node properties (<strong>Hostname/IP</strong>)</li>
+        <li>Passed in <code>msg.payload</code> (takes priority over the configured value)</li>
+    </ul>
+    <p>When <strong>Record Type</strong> is set to <code>PTR</code>, the node performs a reverse lookup via <code>dns.reverse()</code>. For all other record types, it uses <code>dns.resolve()</code>.</p>
+    <p>The node enforces its own timeout independently of the underlying DNS call; if the timeout elapses before a response arrives, the failure output is used with a synthetic timeout error.</p>
+
+    <h3>Examples</h3>
+    <p><strong>Resolve A records for a hostname:</strong></p>
+    <pre>msg.payload = "google.com";</pre>
+
+    <p><strong>Reverse lookup for an IP:</strong></p>
+    <pre>msg.payload = "8.8.8.8";
+msg.recordType = "PTR";</pre>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node (shown in the flow)</p>
+    <p><strong>Hostname/IP:</strong> Default lookup target. Leave empty to use <code>msg.payload</code></p>
+    <p><strong>Record Type:</strong> Default DNS record type (A, AAAA, CNAME, MX, TXT, NS, SRV, PTR). Default is <code>A</code></p>
+    <p><strong>Timeout:</strong> Maximum wait time in milliseconds (1000-30000ms). Default is 5000ms</p>
+</script>

@@ -1,0 +1,118 @@
+<script type="text/javascript">
+    RED.nodes.registerType('tcp-port-check', {
+        category: 'brdc-network-nodes',
+        color: '#8E44AD',
+        defaults: {
+            name: {value: ""},
+            host: {value: ""},
+            ports: {value: "80"},
+            timeout: {value: 3000, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || this.host || "tcp-port-check";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "tcp port check",
+        oneditprepare: function() {
+            if (!this.timeout) {
+                $("#node-input-timeout").val(3000);
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="tcp-port-check">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-host"><i class="fa fa-globe"></i> Host</label>
+        <input type="text" id="node-input-host" placeholder="192.168.1.1 or leave empty to use msg.host">
+        <div class="form-tips">
+            <strong>Tip:</strong> Leave empty to use <code>msg.host</code> as the target host
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-ports"><i class="fa fa-list"></i> Ports</label>
+        <input type="text" id="node-input-ports" placeholder="80,443,22">
+        <div class="form-tips">
+            Comma-separated list of port numbers to check
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" placeholder="3000" min="100" max="30000">
+        <div class="form-tips">
+            Timeout in milliseconds per port (default 3000)
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="tcp-port-check">
+    <p>A node that checks whether one or more TCP ports are open on a host, using a raw TCP connect test (no external dependencies).</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">host <span class="property-type">string</span></dt>
+        <dd>Target host or IP address to check (overrides the configured host)</dd>
+        <dt class="optional">ports <span class="property-type">string | array</span></dt>
+        <dd>Comma-separated string of port numbers, or an array of numbers (overrides the configured ports)</dd>
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Timeout in milliseconds per port (overrides the configured timeout)</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Success output (at least one port open)
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>host</code> - the target host</li>
+                        <li><code>results</code> - array of <code>{port, open, responseTime, error}</code> per checked port</li>
+                        <li><code>openPorts</code> - array of open port numbers</li>
+                        <li><code>closedPorts</code> - array of closed port numbers</li>
+                        <li><code>timestamp</code> - ISO timestamp of when the check completed</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+        <li>Failure output (no ports open)
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>Same structure as success, but <code>openPorts</code> is empty</dd>
+            </dl>
+        </li>
+    </ol>
+
+    <h3>Details</h3>
+    <p>This node attempts a TCP connection to each configured port on the target host, concurrently, and reports which ports are open or closed.</p>
+    <p>The node has two outputs:</p>
+    <ul>
+        <li><strong>Success (top):</strong> When at least one checked port is open</li>
+        <li><strong>Failure (bottom):</strong> When all checked ports are closed</li>
+    </ul>
+    <p>The node status shows the current state: checking, "N/M open" in green when any port is open, or "all closed" in red when none are.</p>
+
+    <h3>Examples</h3>
+    <p><strong>Check a single port:</strong></p>
+    <pre>msg.host = "192.168.1.1";
+msg.ports = "80";</pre>
+
+    <p><strong>Check multiple ports:</strong></p>
+    <pre>msg.host = "192.168.1.1";
+msg.ports = "22,80,443";</pre>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node (shown in the flow)</p>
+    <p><strong>Host:</strong> Default host or IP address to check. Leave empty to use <code>msg.host</code></p>
+    <p><strong>Ports:</strong> Default comma-separated list of ports to check. Default is <code>80</code></p>
+    <p><strong>Timeout:</strong> Maximum wait time in milliseconds per port. Default is 3000ms</p>
+</script>

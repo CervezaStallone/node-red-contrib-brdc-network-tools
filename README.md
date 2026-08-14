@@ -1,6 +1,26 @@
-# node-red-contrib-network-tools
+<p align="center">
+  <img src="img/logo.png" alt="node-red-contrib-network-tools logo" width="256">
+</p>
 
-A comprehensive collection of network monitoring and discovery tools for Node-RED. This package provides four powerful nodes for network analysis, monitoring, and discovery in your Node-RED flows.
+<h1 align="center">node-red-contrib-network-tools</h1>
+
+<p align="center">
+A comprehensive collection of network monitoring, discovery, and diagnostic tools for Node-RED. This package provides nine powerful nodes for network analysis, monitoring, and discovery in your Node-RED flows.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/npm/v/node-red-contrib-network-tools.svg" alt="npm version">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="license">
+  <img src="https://img.shields.io/badge/node--red-%3E%3D1.0.0-red.svg" alt="node-red compatibility">
+</p>
+
+---
+
+<p align="center">
+<a href="https://buymeacoffee.com/Cervezastalone" target="_blank" title="buymeacoffee">
+  <img src="https://iili.io/JoQ1MeS.md.png"  alt="buymeacoffee-yellow-badge" style="width: 208px;">
+</a>
+</p>
 
 ## Installation
 
@@ -143,6 +163,77 @@ Output: {
     aggregateStats: { averageLatency: 13.5, aliveTargets: 2 }
   }
 }
+```
+
+### 🌐 DNS Lookup
+Resolve DNS records (A, AAAA, MX, TXT, CNAME, NS) or reverse-lookup an IP to a hostname (PTR).
+
+**Features:**
+- Forward lookups for any standard DNS record type
+- Reverse (PTR) lookups
+- Per-message overrides for target and record type
+- Configurable timeout with clean failure output
+
+**Usage:**
+```
+Input: { payload: "example.com", recordType: "MX" }
+Output: { payload: { records: [...], target: "example.com", recordType: "MX" } }
+```
+
+### 🔌 TCP Port Check
+Test whether one or more TCP ports are open on a host — no ICMP required, works through firewalls that block ping.
+
+**Features:**
+- Check multiple ports in a single call (comma-separated)
+- Per-port open/closed status with response time
+- Success output if any port is open, failure if all are closed
+
+**Usage:**
+```
+Input: { host: "192.168.1.1", ports: "22,80,443" }
+Output: { payload: { openPorts: [22, 80], closedPorts: [443], results: [...] } }
+```
+
+### 🛰️ Traceroute
+Trace the network path to a target, hop by hop.
+
+**Features:**
+- Cross-platform (`traceroute` on Linux/macOS, `tracert` on Windows)
+- Configurable max hops
+- Parsed hop list (IP + response times) plus raw output
+
+**Usage:**
+```
+Input: { payload: "8.8.8.8", maxHops: 20 }
+Output: { payload: { target: "8.8.8.8", hops: [{ hop: 1, ip: "...", times: [...] }, ...] } }
+```
+
+### 📶 Bandwidth Monitor
+Measure real download throughput by timing a download against a configurable test URL (defaults to a public Cloudflare speed-test endpoint).
+
+**Features:**
+- Real-world Mbps measurement, not a synthetic estimate
+- Configurable test URL and timeout
+- Works with any public or self-hosted HTTP(S) download endpoint
+
+**Usage:**
+```
+Input: { testUrl: "https://speed.cloudflare.com/__down?bytes=10000000" }
+Output: { payload: { mbps: 87.3, bytesReceived: 10000000, elapsedSeconds: 0.92 } }
+```
+
+### 📡 SNMP Poll
+Query SNMP-enabled devices (switches, routers, printers, UPS units) for one or more OIDs.
+
+**Features:**
+- SNMP v1 and v2c support
+- Multiple OIDs per request (comma-separated)
+- Per-OID error handling — one bad OID doesn't fail the whole poll
+
+**Usage:**
+```
+Input: { host: "192.168.1.1", community: "public", oids: "1.3.6.1.2.1.1.1.0" }
+Output: { payload: { results: [{ oid: "1.3.6.1.2.1.1.1.0", value: "...", type: "OctetString" }] } }
 ```
 
 ## Configuration Tips
@@ -306,9 +397,9 @@ http,ssh,smb,printer,afpovertcp
 - **Node.js**: v12.0.0 or higher
 - **Operating System**: Windows, macOS, Linux
 
-## License
+## Contributing
 
-MIT License - Free for personal and commercial use.
+Contributions are welcome — bug reports, feature requests, and pull requests alike. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get set up and what to expect from the review process.
 
 ## About
 
@@ -316,7 +407,12 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 ## Version History
 
-### v2.3.6 (Latest)
+### v3.0.0 (Latest)
+- **🎉 NEW: 5 New Nodes** - `dns-lookup`, `tcp-port-check`, `traceroute`, `bandwidth-monitor`, `snmp-poll` join the original four
+- **⚖️ License Change** - Relicensed from MIT to GPL-3.0
+- **Docs** - Full documentation, badges, and contributing guide added
+
+### v2.3.6
 - **Republish** - Republished to npm; registry had been stuck on v2.3.5 despite the hostname-validation, packaging, and test-runner fixes below already being in git
 
 ### v2.3.5
@@ -373,3 +469,15 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 - Initial release with four network monitoring nodes
 - Support for IPv4/IPv6 and hostname resolution
 - CIDR and IP range scanning capabilities
+
+---
+
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Developed by <strong><a href="https://brdc.nl">BRDC</a></strong><br>
+</p>

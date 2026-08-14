@@ -1,0 +1,139 @@
+<script type="text/javascript">
+    RED.nodes.registerType('snmp-poll', {
+        category: 'brdc-network-nodes',
+        color: '#8E24AA',
+        defaults: {
+            name: {value: ""},
+            host: {value: ""},
+            community: {value: "public"},
+            oids: {value: "1.3.6.1.2.1.1.1.0"},
+            version: {value: "2c"},
+            timeout: {value: 5000, validate: RED.validators.number()}
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ["success", "failure"],
+        icon: "inject.png",
+        label: function() {
+            return this.name || this.host || "snmp-poll";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "snmp poll",
+        oneditprepare: function() {
+            if (!this.community) {
+                $("#node-input-community").val("public");
+            }
+            if (!this.oids) {
+                $("#node-input-oids").val("1.3.6.1.2.1.1.1.0");
+            }
+            if (!this.timeout) {
+                $("#node-input-timeout").val(5000);
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="snmp-poll">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-host"><i class="fa fa-globe"></i> Host</label>
+        <input type="text" id="node-input-host" placeholder="192.168.1.1 or leave empty to use msg.host">
+        <div class="form-tips">
+            <strong>Tip:</strong> Leave empty to use <code>msg.host</code> as the target host
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-community"><i class="fa fa-key"></i> Community</label>
+        <input type="text" id="node-input-community" placeholder="public">
+    </div>
+    <div class="form-row">
+        <label for="node-input-oids"><i class="fa fa-list"></i> OIDs</label>
+        <input type="text" id="node-input-oids" placeholder="1.3.6.1.2.1.1.1.0">
+        <div class="form-tips">
+            Comma-separated list of OIDs to poll
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-version"><i class="fa fa-code-fork"></i> Version</label>
+        <select id="node-input-version">
+            <option value="1">1</option>
+            <option value="2c">2c</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+        <input type="number" id="node-input-timeout" placeholder="5000" min="100" max="60000">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="snmp-poll">
+    <p>A node that polls one or more SNMP OIDs on a remote host and returns the results.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">host <span class="property-type">string</span></dt>
+        <dd>Target host to poll (if not configured in the node)</dd>
+        <dt class="optional">community <span class="property-type">string</span></dt>
+        <dd>SNMP community string (overrides configured value)</dd>
+        <dt class="optional">oids <span class="property-type">string</span></dt>
+        <dd>Comma-separated list of OIDs to poll (overrides configured value)</dd>
+        <dt class="optional">version <span class="property-type">string</span></dt>
+        <dd>SNMP version, "1" or "2c" (overrides configured value)</dd>
+        <dt class="optional">timeout <span class="property-type">number</span></dt>
+        <dd>Timeout in milliseconds (overrides configured value)</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Success output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>host</code> - the target host</li>
+                        <li><code>results</code> - array of <code>{oid, value, type}</code> for each successfully polled OID</li>
+                        <li><code>errors</code> - array of per-OID errors (if any individual OID failed)</li>
+                        <li><code>timestamp</code> - ISO timestamp of when the poll completed</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+        <li>Failure output
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>
+                    <ul>
+                        <li><code>error</code> - the session-level error message (e.g. timeout, unreachable)</li>
+                        <li><code>host</code> - the target host</li>
+                    </ul>
+                </dd>
+            </dl>
+        </li>
+    </ol>
+
+    <h3>Details</h3>
+    <p>This node uses SNMP GET to poll one or more OIDs on a remote host.</p>
+    <p>The success output fires whenever the SNMP session itself completes without error, even if individual OIDs in the request returned per-OID errors (those are reported in <code>payload.errors</code>).</p>
+    <p>The failure output fires on session-level errors such as a timeout or unreachable host.</p>
+    <p>The node status shows the current state: polling, number of OIDs successfully retrieved, or error.</p>
+
+    <h3>Examples</h3>
+    <p><strong>Poll sysDescr from a device:</strong></p>
+    <pre>msg.host = "192.168.1.1";</pre>
+
+    <p><strong>Poll multiple OIDs:</strong></p>
+    <pre>msg.oids = "1.3.6.1.2.1.1.1.0,1.3.6.1.2.1.1.3.0";</pre>
+
+    <h3>Configuration</h3>
+    <p><strong>Name:</strong> Optional name for the node (shown in the flow)</p>
+    <p><strong>Host:</strong> Default target host. Leave empty to use <code>msg.host</code></p>
+    <p><strong>Community:</strong> SNMP community string. Default is <code>public</code></p>
+    <p><strong>OIDs:</strong> Comma-separated list of OIDs to poll. Default is sysDescr (<code>1.3.6.1.2.1.1.1.0</code>)</p>
+    <p><strong>Version:</strong> SNMP version, <code>1</code> or <code>2c</code>. Default is <code>2c</code></p>
+    <p><strong>Timeout:</strong> Maximum wait time in milliseconds. Default is 5000ms</p>
+</script>
