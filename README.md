@@ -14,6 +14,12 @@ A comprehensive collection of network monitoring, discovery, and diagnostic tool
   <img src="https://img.shields.io/badge/node--red-%3E%3D1.0.0-red.svg" alt="node-red compatibility">
 </p>
 
+<p align="center">
+  <a href="https://brdc.nl/en/node-red-network-tools/">Project page</a> ·
+  <a href="https://brdc.nl/nl/node-red-network-tools/">Nederlands</a> ·
+  <a href="https://brdc.nl/de/node-red-network-tools/">Deutsch</a>
+</p>
+
 ---
 
 <p align="center">
