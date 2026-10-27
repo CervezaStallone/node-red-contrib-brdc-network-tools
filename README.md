@@ -23,7 +23,7 @@ A comprehensive collection of network monitoring, discovery, and diagnostic tool
 ---
 
 <p align="center">
-<a href="https://buymeacoffee.com/Cervezastalone" target="_blank" title="buymeacoffee">
+<a href="https://buymeacoffee.com/cervezastallone" target="_blank" title="buymeacoffee">
   <img src="https://iili.io/JoQ1MeS.md.png"  alt="buymeacoffee-yellow-badge" style="width: 208px;">
 </a>
 </p>

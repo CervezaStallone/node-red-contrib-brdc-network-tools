@@ -69,7 +69,7 @@
   "license": "GPL-3.0-only",
   "funding": {
     "type": "buymeacoffee",
-    "url": "https://buymeacoffee.com/Cervezastalone"
+    "url": "https://buymeacoffee.com/cervezastallone"
   },
   "dependencies": {
     "bonjour": "3.5.0",
