@@ -482,6 +482,12 @@ Created by **Brian Rodriguez - BRDC.nl** for the Node-RED community.
 
 GPL-3.0 — see [LICENSE](LICENSE) for details.
 
+The npm dependencies are installed under their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Node-RED is a trademark of the OpenJS Foundation. This is an independent package, not affiliated with or endorsed by the OpenJS Foundation or the Node-RED project.
+
+The software is provided as is, without any warranty (see [LICENSE](LICENSE)). Use it at your own risk; to the extent permitted by law, BRDC is not liable for any damage caused by its use, including damage to networks or equipment.
+
 ---
 
 <p align="center">
